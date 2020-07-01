@@ -52,10 +52,9 @@ solve_and_plot <- function(init, params, times, func){
 
 # example of using it
 
-init <- c(S = 0.9, I = 0.1, R=0.0)
-params <- c(beta = 0.1, gamma = 0.005, d = 0.001 , b = 0.001)
-times <- seq(0, 600, by = 1)
+init <- c(S = 1- 1/763, I = 1/763, R=0.0)
+params <- c(beta = 1, gamma = 1/13)
+times <- seq(0, 50, by = 1)
 
-solve_and_plot(init, params, times, SIR_birth_death)
-print(res_plot)
-results
+out <- solve_and_plot(init, params, times, SIRmodel)
+

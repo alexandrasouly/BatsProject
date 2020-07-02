@@ -1,5 +1,7 @@
 ---
-title: "Stochastic SIR model in POMP"
+title: "stoch_bd_SIR_POMP"
+author: "Alexandra Souly"
+date: "02/07/2020"
 output: html_document
 ---
 
@@ -13,16 +15,18 @@ library(pomp)
 library(ggplot2)
 ```
 
-I used POMP to create a deteministic and a stochastic version of the basic SIR model. I am using the discrete difference equations version for both. POMP stores all data in its own pomp class that can be used for complicated methods in the package, so I hope it will be easier to implement algorithms later within the package.
+I used POMP to create a deteministic and a stochastic version of the basic SIR model. I am using the discrete difference equations version for both. I tried adding in simple birth-death dynamics too.
+
+POMP stores all data in its own pomp class that can be used for complicated methods in the package, so I hope it will be easier to implement algorithms later within the package.
 
 We start by specifying the deterministic model skeleton, I use the following equations:  
   ("D" signifies the update value for the map in the equations) 
 ```{r skel}
 # deterministic skeleton
 skel <- Csnippet("
-  DS = S - Beta*S*I/N;
-  DI = I + Beta*S*I/N-gamma*I;
-  DR = R + gamma*I;
+  DS = S - Beta*S*I/N           + b*N - d*S ;
+  DI = I + Beta*S*I/N - gamma*I       - d*I;
+  DR = R              + gamma*I       - d*R;
 ")
 ```
 Then I specify the stochastic stepping process:  
@@ -30,16 +34,24 @@ Then I specify the stochastic stepping process:
 
 ```{r SthcStep}
 # stochastic stepping process
+
 stochStep <- Csnippet("
   p_SI = 1 - exp(-Beta*I/N);
   p_IR = 1 - exp(-gamma);
+  p_b  = 1 - exp(-b);
+  p_d  = 1 - exp(-d);
 
   n_SI = rbinom(S,p_SI);
   n_IR = rbinom(I,p_IR);
-
-  S = S - n_SI;
-  I = I + n_SI - n_IR;
-  R = R + n_IR;
+  
+  b_N  = rbinom(N, p_b);
+  d_I  = rbinom(I, p_d);
+  d_R  = rbinom(R, p_d);
+  d_S  = rbinom(S, p_d);
+  
+  S = S - n_SI        + b_N  - d_S;
+  I = I + n_SI - n_IR        - d_I;
+  R = R        + n_IR        - d_R;
 
 ")
 ```
@@ -53,7 +65,7 @@ init1 <- Csnippet("
   R = 0;
   ")
 
-params1 <- c(Beta=1, gamma = 1/13, N= 763)
+params1 <- c(Beta=1, gamma = 1/13, N= 763, b=0.05, d = 0.05)
 ```
 
 Then we can create a POMP object:  
@@ -67,8 +79,8 @@ closed_sir <- pomp(data=data.frame(time=1:50,data=NA),
                    rprocess=discrete_time(step.fun=stochStep,delta.t=1),
                    skeleton = map(skel),
                    rinit=init1,
-                   statenames=c("S","I","R", "p_SI", "p_IR", "n_SI", "n_IR"),
-                   paramnames=c("Beta","gamma","N"))
+                   statenames=c("S","I","R", "p_SI", "p_IR", "p_b", "p_d", "n_SI", "n_IR", "b_N", "d_I", "d_S", "d_R"),
+                   paramnames=c("Beta","gamma","N", "b", "d"))
 
 ```
 
@@ -101,4 +113,3 @@ labs(title="Stochastic SIR model")
 
 plot(created_plot)
 ```
-

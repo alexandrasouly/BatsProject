@@ -49,7 +49,13 @@ sim <- simulate(closed_sir,params=params1,format = "data.frame", nsim = 100)
 
 traj <- trajectory(closed_sir,params=params1,format="data.frame")
 
-ggplot(NULL)+
-geom_line(data=sim, alpha = 0.05,aes(x=time, y = I, group= factor(.id), colour = "Stochastic runs"))+scale_color_discrete(name="Legend")+
-geom_line(data=traj, aes(x=time, y=I, colour ="deterministic SIR"))+ labs(title="Stochastic SIR model")
+created_plot <-ggplot(NULL)+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = I, group= factor(.id), colour = "Stochastic infected"))+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = R, group= factor(.id), colour = "Stochastic recovered"))+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = S, group= factor(.id), colour = "Stochastic susceptible"))+
+scale_color_discrete(name="Legend")+
+geom_line(data=traj, aes(x=time, y=I))+
+geom_line(data=traj, aes(x=time, y=R))+
+geom_line(data=traj, aes(x=time, y=S))+
+labs(title="Stochastic SIR model")
 

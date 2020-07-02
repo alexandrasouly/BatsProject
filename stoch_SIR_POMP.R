@@ -45,12 +45,11 @@ closed_sir <- pomp(data=data.frame(time=1:50,data=NA),
 
 
 
-sim <- simulate(closed_sir,params=params1,format = "data.frame")
+sim <- simulate(closed_sir,params=params1,format = "data.frame", nsim = 100)
 
 traj <- trajectory(closed_sir,params=params1,format="data.frame")
 
-ggplot(data=sim)+geom_point(aes(x=time, y = I, colour = "Simulated SIR"))+
-  scale_color_discrete(name="Legend") +
-  geom_line(aes(x=traj$time, y=traj$I, colour ="deterministic SIR")) +
-  labs(title="Stochastic SIR model")
- 
+ggplot(NULL)+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = I, group= factor(.id), colour = "Stochastic runs"))+scale_color_discrete(name="Legend")+
+geom_line(data=traj, aes(x=time, y=I, colour ="deterministic SIR"))+ labs(title="Stochastic SIR model")
+

@@ -1,0 +1,104 @@
+---
+title: "Stochastic SIR model in POMP"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r load packages, include=FALSE}
+library(pomp)
+library(ggplot2)
+```
+
+I used POMP to create a deteministic and a stochastic version of the basic SIR model. I am using the discrete difference equations version for both. POMP stores all data in its own pomp class that can be used for complicated methods in the package, so I hope it will be easier to implement algorithms later within the package.
+
+We start by specifying the deterministic model skeleton, I use the following equations:  
+  ("D" signifies the update value for the map in the equations) 
+```{r skel}
+# deterministic skeleton
+skel <- Csnippet("
+  DS = S - Beta*S*I/N;
+  DI = I + Beta*S*I/N-gamma*I;
+  DR = R + gamma*I;
+")
+```
+Then I specify the stochastic stepping process:  
+  I used 1-exp(r) for the per capita stepping probabilities for rate r in the difference eqs and a binomial distribution for the numbers of individuals moving between compartments.
+
+```{r SthcStep}
+# stochastic stepping process
+stochStep <- Csnippet("
+  p_SI = 1 - exp(-Beta*I/N);
+  p_IR = 1 - exp(-gamma);
+
+  n_SI = rbinom(S,p_SI);
+  n_IR = rbinom(I,p_IR);
+
+  S = S - n_SI;
+  I = I + n_SI - n_IR;
+  R = R + n_IR;
+
+")
+```
+I set some arbitrary initial states and parameters (one infected out of 763, I think something like measles has parameters like that? )
+
+```{r setting initial values and params}
+# initial values of states
+init1 <- Csnippet("
+  S = N-1;
+  I = 1;
+  R = 0;
+  ")
+
+params1 <- c(Beta=1, gamma = 1/13, N= 763)
+```
+
+Then we can create a POMP object:  
+  We follow the process for 50 days, POMP will use our stochastic process described above.
+
+```{r POMP object}
+
+closed_sir <- pomp(data=data.frame(time=1:50,data=NA),
+                   times="time",
+                   t0=0,
+                   rprocess=discrete_time(step.fun=stochStep,delta.t=1),
+                   skeleton = map(skel),
+                   rinit=init1,
+                   statenames=c("S","I","R", "p_SI", "p_IR", "n_SI", "n_IR"),
+                   paramnames=c("Beta","gamma","N"))
+
+```
+
+We then simulate 100 instances of the stochastic model and also calculate the trajectory with the deterministic model:  
+  ID represents which number of simulation we are one, so this example output is the first and last step of the first 3 simulations out of 100.
+
+``` {r simulate}
+sim <- simulate(closed_sir,params=params1,format = "data.frame", nsim = 100)
+head(sim, 3)
+tail(sim, 3)
+
+traj <- trajectory(closed_sir,params=params1,format="data.frame")
+head(traj, 3)
+tail(traj,3)
+```
+
+We then plot to see how the stochastic results differ from the deterministic trajectory:
+
+```{r Creating plot, echo=FALSE}
+
+created_plot <-ggplot(NULL)+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = I, group= factor(.id), colour = "Stochastic infected"))+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = R, group= factor(.id), colour = "Stochastic recovered"))+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = S, group= factor(.id), colour = "Stochastic susceptible"))+
+scale_color_discrete(name="Legend")+
+geom_line(data=traj, aes(x=time, y=I))+
+geom_line(data=traj, aes(x=time, y=R))+
+geom_line(data=traj, aes(x=time, y=S))+
+labs(title="Stochastic SIR model")
+
+plot(created_plot)
+```
+

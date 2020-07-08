@@ -1,0 +1,126 @@
+---
+title: "Seasonal births SIR POMP"
+author: "Alexandra Souly"
+date: "07/07/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r load packages, include=FALSE}
+library(pomp)
+library(ggplot2)
+```
+
+I used POMP to create a deteministic and a stochastic version of the basic SIR model. I am using the discrete difference equations version for both. I tried adding in simple birth-death dynamics too, with yearly births accordings to $b(t)=b_0\,(1+b_1\cos(2\,\pi\,t))$.
+
+POMP stores all data in its own pomp class that can be used for complicated methods in the package, so I hope it will be easier to implement algorithms later within the package.
+
+We start by specifying the deterministic model skeleton, I use the following equations:  
+  ("D" signifies the update value for the map in the equations)   
+```{r skel}
+skel <- Csnippet("
+  double b = b0*(1+b1*cos(2*M_PI*t/365));
+  DS = S - Beta*S*I/N           + b*N - d*S ;
+  DI = I + Beta*S*I/N - gamma*I       - d*I;
+  DR = R              + gamma*I       - d*R;
+")
+```
+  Then I specify the stochastic stepping process:  
+  I used 1-exp(r) for the per capita stepping probabilities for rate r in the difference eqs and a binomial distribution for the numbers of individuals moving between compartments.
+
+```{r SthcStep}
+
+stochStep <- Csnippet("
+  double b = b0*(1+b1*cos(2*M_PI*t/365));
+  p_SI = 1 - exp(-Beta*I/N);
+  p_IR = 1 - exp(-gamma);
+  p_b  = 1 - exp(-b);
+  p_d  = 1 - exp(-d);
+
+  n_SI = rbinom(S,p_SI);
+  n_IR = rbinom(I,p_IR);
+  
+  b_N  = rbinom(N, p_b);
+  d_I  = rbinom(I, p_d);
+  d_R  = rbinom(R, p_d);
+  d_S  = rbinom(S, p_d);
+  
+  S = S - n_SI        + b_N  - d_S;
+  I = I + n_SI - n_IR        - d_I;
+  R = R        + n_IR        - d_R;
+
+")
+```
+I set some arbitrary initial states and parameters (5 infected out of, 13 days infectious period)
+
+```{r setting initial values and params}
+# initial values of states
+init1 <- Csnippet("
+  S = N-5;
+  I = 5;
+  R = 0;
+  ")
+
+params1 <- c(Beta=1, b0=0.1, b1=0.4, gamma = 1/13, N= 763, d = 0.1)
+```
+
+Then we can create a POMP object:  
+  We follow the process for 700 days, POMP will use our stochastic process described above.
+
+```{r POMP object}
+
+closed_sir <- pomp(data=data.frame(time=1:700,data=NA),
+                   times="time",
+                   t0=0,
+                   rprocess=discrete_time(step.fun=stochStep,delta.t=1),
+                   skeleton = map(skel),
+                   rinit=init1,
+                   statenames=c("S","I","R", "p_SI", "p_IR", "p_b", "p_d", "n_SI", "n_IR", "b_N", "d_I", "d_S", "d_R"),
+                   paramnames=c("Beta","b0","b1","gamma","N", "d"))
+
+```
+
+We then simulate 100 instances of the stochastic model and also calculate the trajectory with the deterministic model:  
+
+``` {r simulate}
+sim <- simulate(closed_sir,params=params1,format = "data.frame", nsim = 100)
+
+traj <- trajectory(closed_sir,params=params1,format="data.frame")
+```
+We first plot the population dynamics to see how the seasonal birth pulse looks like:
+
+```{r population plot}
+
+birth_plot <- ggplot(NULL)+ geom_line(data=traj,aes(x=time, y = I+S+R,))+ylim(0,NA)+
+              labs(title="Seasonal birth pulse")+xlab("Days")+ylab("Size of population")+
+              theme(plot.title = element_text(hjust = 0.5))
+
+plot(birth_plot)
+
+
+```
+We then plot to see how the stochastic results differ from the deterministic trajectory (in black). Red is infected, green is recovered and blue is supsceptible:
+
+
+```{r Creating plot, echo=FALSE}
+
+cols <- c( "Stochastic infected"= "red", "Stochastic susceptible" = "blue", "Stochastic recovered" = "darkgreen")
+
+created_plot <-ggplot(NULL)+
+  geom_line(data=sim, alpha = 0.05,aes(x=time, y = I, group= factor(.id), colour = "Stochastic infected"))+
+  geom_line(data=sim, alpha = 0.05,aes(x=time, y = R, group= factor(.id), colour = "Stochastic recovered"))+
+  geom_line(data=sim, alpha = 0.05,aes(x=time, y = S, group= factor(.id), colour = "Stochastic susceptible"))+
+  scale_colour_manual(values = cols)+
+  geom_line(data=traj, aes(x=time, y=I))+
+  geom_line(data=traj, aes(x=time, y=R))+
+  geom_line(data=traj, aes(x=time, y=S))+
+  labs(title="Stochastic SIR model")
+
+plot(created_plot)
+```

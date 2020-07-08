@@ -1,4 +1,2 @@
 # Bats
-2020 Cambridge CMP Summer research project on disease dynamics
-
-bats are cute
+2020 Cambridge CMP Summer research project on disease dynamic

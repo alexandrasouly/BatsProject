@@ -1,0 +1,65 @@
+---
+title: "Gillespie SIR with births and deaths"
+author: "Alexandra Souly"
+date: "08/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+All of the below code was taken from https://kingaa.github.io/, this markdown is an attempt to explain the process to myself and for future reference, if I need to implement Gillespie for a different model. 
+
+For creating a pomp object, we need to use gillespie_hl which is the high level function, the low level is more convenient when we have a lot of similar rules to specifiy. To specify the equations, we just need the rates and how each compartment changes with that event. The algorithm calculates the time of the next event based on an exponential distribution wth a rate being the sum of all separate rates, and then decides which event happened based on probabilities according to the propotion of the rates. Between each timestamp, multiple or no event could have happened.  
+  The accumvars parameter goes back to 0 after each timestamp, so we can measure the new infections with it.
+  The rmeasure parameter describes the process by which observations are measured, here it is the reported new infections, depending on the number of new cases by a binomial distribution. 
+
+
+```{r create object}
+library(pomp)
+
+pomp(
+  data=data.frame(
+    time=seq(0.01,0.5,by=0.01),
+    reports=NA
+  ),
+  times="time",t0=0,
+  rprocess=gillespie_hl(
+    birth=list("rate = mu*N;",c(N=1,X=1,Y=0,Z=0,cases=0)),
+    deathS=list("rate=mu*X;",c(N=-1,X=-1,Y=0,Z=0,cases=0)),
+    deathI=list("rate=mu*Y;",c(N=-1,X=0,Y=-1,Z=0,cases=0)),
+    deathR=list("rate=mu*Z;",c(N=-1,X=0,Y=0,Z=-1,cases=0)),
+    infection=list("rate=Beta*X*Y/N;",c(N=0,X=-1,Y=1,Z=0,cases=1)),
+    recovery=list("rate=gamma*Y;",c(N=0,X=0,Y=-1,Z=1,cases=0)),
+    hmax=0.01
+  ),
+  rmeasure=Csnippet("reports=rbinom(cases,rho);"),
+  paramnames=c("rho","mu","Beta","gamma"),
+  statenames=c("N","X","Y","Z","cases"),
+  accumvars=c("cases"),
+  params=c(X.0=392,Y.0=8,Z.0=0,N.0=400,cases.0=0,
+           mu=0.02,Beta=60,gamma=365/13,rho=0.5)
+) -> sir
+```
+
+## Including Plots
+
+We simulate 100 times and plot:
+
+```{r plots, echo = TRUE}
+simulate(sir,nsim=10,format="data.frame") -> sims
+
+library(ggplot2)
+library(reshape2)
+ggplot(melt(sims,id=c("time",".id")),
+       aes(x=time,y=value,group=.id,color=.id))+
+  geom_line()+
+  guides(color=FALSE)+
+  facet_grid(variable~.,scales="free_y")
+```
+
+Notes for myself on how to plot:  
+  The melt function "flattens" the dataframe out, keeping the id vars. Then we group every plot by id, and with facet_grid we plot them according to their variable on the y axis.

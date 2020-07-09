@@ -4,8 +4,8 @@ library(pomp)
 # no pop dyn.
 
 closed_sir_ode <- Csnippet("
-  DS = S - Beta*S*I/N;
-  DI = I + Beta*S*I/N-gamma*I;
+  if (S - Beta*S*I/(N) <= 0){DS = 0;} else {DS = S - Beta*S*I/(N);}
+  if (I + Beta*S*I/(N)-gamma*I <=0) {DI = 0;} else {DI = I + Beta*S*I/(N)-gamma*I;}
   DR = R + gamma*I;
 ")
 

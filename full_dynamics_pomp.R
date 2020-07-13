@@ -3,22 +3,29 @@
 # same equs as in Aaron's supp material
 # maternal immunity included
 # here for now E and R gives maternal immunity as in supp eqs, not github equs
+# params are set for SIR model
+# seasonal forces are birth pulses only for now 
 
 library(pomp)
 
 det_model_skeleton <- Csnippet("
+
+  /* seasonal forcing of birth */
+  
+  double b = c * exp( - s * (pow(cos(M_PI * t - phi), 2)));
 
   /* pre-calculations and scaling params: */
   
   double N = (Sn + Sj + Sm + Sf + En + Ej + Em + Ef + In + Ij + Im + If 
     + Rn + Rj + Rm + Rf + Ma);
     
-  double b = b_val / delta_t;
   double beta_v = beta_val / delta_t;
   double gamma = gamma_val / delta_t;
   double omega = omega_val / delta_t;
   double omega_m = omega_m_val / delta_t;
-  double kappa = kappa_val / delta_t;
+  
+  double kappa = kappa_val;
+  
   double rho = rho_val / delta_t;
   double epsilon = epsilon_val / delta_t;
   double mu = mu_val / delta_t;
@@ -26,15 +33,13 @@ det_model_skeleton <- Csnippet("
   double m = m_val /delta_t;
     
 
-  double Sbirths = b * (Sf + If);
-  double MaBirths = b * (Rf + Ef);
+  double Sbirths = b * (Sf + If) / delta_t;
+  double MaBirths = b * (Rf + Ef) / delta_t;
   
   double betSN = omega_m + mj * (N / kappa) + beta_v * (If + Im + Ij + In);
   double betSj = mu + mj * (N / kappa) + (beta_v) * (If + Im + In + Ij);
   double betSmf = m * (N / kappa) + (beta_v) * (If + Im + In + Ij);
   double betI = beta_v * (If + Im + In + Ij);
-  
-
   
   
   /* newborn transitions: */
@@ -51,6 +56,7 @@ det_model_skeleton <- Csnippet("
   } else {
     DSn = Sn + (Sbirths) - (betSN * Sn) + omega * Rn;
   }
+  
   
   if (En - ((omega_m + mj * (N / kappa) + epsilon) * En) + rho * In <= 0) {
     DEn = 0;
@@ -136,6 +142,7 @@ det_model_skeleton <- Csnippet("
     DSf = Sf + mu * (Sj / 2) - betSmf * Sf + omega * Rf;
   }
   
+  
   if (Ef + mu * (Ej / 2) - (m * (N / kappa) + epsilon) * Ef + rho * If <= 0) {
     DEf = 0;
   } else {
@@ -153,7 +160,6 @@ det_model_skeleton <- Csnippet("
   } else {
     DRf = Rf + mu * (Rj / 2) - (m * (N / kappa) + omega) * Rf + gamma * If;
   }
-  
 
 ")
 
@@ -161,7 +167,6 @@ det_model_skeleton <- Csnippet("
 init_states <- Csnippet("
   
   Ma = 0;
-
   Sn = 20;
   Sj = 20;
   Sm = 40;
@@ -185,36 +190,38 @@ init_states <- Csnippet("
   
 ")
 
-# try SIR here: rho, epsilon = 0
+# rates are given as yearly, we scale time as days
 params <- c(
   
-  b_val = 0.6,
-  beta_val = 1,
-  gamma_val = 0.5,
-  omega_val = 0,
-  omega_m_val = 0.4,
-  kappa_val = 1000,
-  rho_val = 0,
-  epsilon_val = 0,
-  mu_val = 0.44,
-  mj_val = 0.6,
-  m_val = 0.2,
-  delta_t = 365)
+  beta_val = 0.01, # infection rate S -> R
+  gamma_val = 0.5, # recovery rate I -> R
+  omega_val = 0, # immune waning rate R -> S
+  omega_m_val = 0.4, # maternal antibody waning rate
+  kappa_val = 1000, # carrying capacity
+  rho_val = 0, # I -> L 
+  epsilon_val = 0, # L -> I 
+  mu_val = 0.44, # juvenile maturation rate
+  mj_val = 0.8, # juvenile death rate
+  m_val = 0.2, # adult death rate
+  delta_t = 365, # scaling time as days instead of years
+  c = 1.53, #birth pulse scaling factor
+  s = 14.3, #birth pulse synchronicity
+  phi = 4.5) #birth pulse time shift
 
 state_names <- c("Ma",
                "Sn","Sj", "Sm", "Sf",
                "En","Ej", "Em", "Ef",
                "In","Ij", "Im", "If",
-               "Rn","Rj", "Rm", "Rf"
+               "Rn","Rj", "Rm", "Rf",
                )
 
 
-param_names <- c( "b_val", "beta_val", "gamma_val", "omega_val", "omega_m_val", "kappa_val", "rho_val", 
-               "epsilon_val", "mu_val", "mj_val", "m_val",  "delta_t"
+param_names <- c( "beta_val", "gamma_val", "omega_val", "omega_m_val", "kappa_val", "rho_val", 
+               "epsilon_val", "mu_val", "mj_val", "m_val",  "delta_t",  "c", "s", "phi"
                )
 
-# can go by 1, as we specify this is delta_t explicitly
-pomp_object <- pomp(data=data.frame(time=seq(0,1,by=1/365),cases=NA),
+# we need to specify step size in map fn as we want to take day sized steps
+pomp_object <- pomp(data=data.frame(time=seq(0,3,by=1/365),cases=NA),
                  times="time",t0=0,
                  skeleton=map(det_model_skeleton, delta.t = 1/365),
                  rinit=init_states,
@@ -224,7 +231,11 @@ pomp_object <- pomp(data=data.frame(time=seq(0,1,by=1/365),cases=NA),
 
 x <- trajectory(pomp_object,params=params,format="d")
 
+x$N <- (x$Sn + x$Sj + x$Sm + x$Sf + x$En + x$Ej + x$Em + x$Ef + x$In + x$Ij + x$Im + x$If +
+        x$Rn + x$Rj + x$Rm + x$Rf + x$Ma)
+
 library(ggplot2)
-ggplot(data=x,mapping=aes(x=time,y=If))+geom_line()
-ggplot(data=x,mapping=aes(x=time,y=Rf))+geom_line()
-ggplot(data=x,mapping=aes(x=time,y=Sf))+geom_line()
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=Im))+
+  geom_line(aes(x=time, y=Rm))+
+  geom_line(aes(x=time, y=Sm))

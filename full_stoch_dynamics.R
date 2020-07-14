@@ -608,7 +608,3 @@ ggplot(data=x,mapping=aes(x=time))+
   geom_line(data=sim, alpha = 0.1,aes(x=time, y = Ma, group= factor(.id),
                                       colour = "Stochastic infected")) ->plMa
 
-library(cowplot)
-
-plot_grid(plSn, plSj, plSm, plIn, plIj, plIm,  
-          plRn, plRj, plRm, plMa)

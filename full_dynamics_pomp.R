@@ -212,7 +212,7 @@ state_names <- c("Ma",
                "Sn","Sj", "Sm", "Sf",
                "En","Ej", "Em", "Ef",
                "In","Ij", "Im", "If",
-               "Rn","Rj", "Rm", "Rf",
+               "Rn","Rj", "Rm", "Rf"
                )
 
 
@@ -234,8 +234,39 @@ x <- trajectory(pomp_object,params=params,format="d")
 x$N <- (x$Sn + x$Sj + x$Sm + x$Sf + x$En + x$Ej + x$Em + x$Ef + x$In + x$Ij + x$Im + x$If +
         x$Rn + x$Rj + x$Rm + x$Rf + x$Ma)
 
+# making plots
 library(ggplot2)
 ggplot(data=x,mapping=aes(x=time))+
-  geom_line(aes(x=time, y=Im))+
-  geom_line(aes(x=time, y=Rm))+
-  geom_line(aes(x=time, y=Sm))
+  geom_line(aes(x=time, y=Im)) ->plIm
+
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=Sm)) ->plSm
+
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=Rm)) ->plRm
+
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=Ij)) ->plIj
+
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=Sj)) ->plSj
+
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=Rj)) ->plRj
+
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=In)) ->plIn
+
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=Sn)) ->plSn
+
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=Rn)) ->plRn
+
+ggplot(data=x,mapping=aes(x=time))+
+  geom_line(aes(x=time, y=Ma)) ->plMa
+
+library(cowplot)
+
+plot_grid(plSn, plSj, plSm, plIn, plIj, plIm,  
+          plRn, plRj, plRm, plMa, ncol = 3)

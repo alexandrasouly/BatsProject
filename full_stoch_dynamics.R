@@ -3,7 +3,7 @@ stochStep <- Csnippet("
 
   /* -------------------------- seasonal forcing of birth ----------------------------------------- */
   
-  double b = c * exp( - s * (pow(cos(M_PI * t - phi), 2)));
+  double b = c * exp( - s * (pow(cos(M_PI * t / 365 - phi), 2)));
 
   /*---------------------------- pre-calculations and scaling params:------------------------------- */
   
@@ -363,7 +363,7 @@ det_model_skeleton <- Csnippet("
 
   /* seasonal forcing of birth */
   
-  double b = c * exp( - s * (pow(cos(M_PI * t - phi), 2)));
+  double b = c * exp( - s * (pow(cos(M_PI * t / 365 - phi), 2)));
 
   /* pre-calculations and scaling params: */
   
@@ -544,11 +544,11 @@ param_names <- c( "beta_val", "gamma_val", "omega_val", "omega_m_val", "kappa_va
                   "epsilon_val", "mu_val", "mj_val", "m_val",  "delta_t",  "c", "s", "phi"
 )
 
-pomp_object <- pomp(data=data.frame(time=seq(0,3,by=1/365),cases=NA),
+pomp_object <- pomp(data=data.frame(time=seq(0,3*365,by=1),cases=NA),
                     times="time",t0=0,
-                    rprocess=discrete_time(step.fun=stochStep,delta.t=1/365),
+                    rprocess=discrete_time(step.fun=stochStep,delta.t=1),
                     rinit=init_states,
-                    skeleton=map(det_model_skeleton, delta.t = 1/365),
+                    skeleton=map(det_model_skeleton, delta.t = 1),
                     statenames=state_names,
                     paramnames=param_names
 )
@@ -607,4 +607,3 @@ ggplot(data=x,mapping=aes(x=time))+
   geom_line(aes(x=time, y=Ma))+
   geom_line(data=sim, alpha = 0.1,aes(x=time, y = Ma, group= factor(.id),
                                       colour = "Stochastic infected")) ->plMa
-

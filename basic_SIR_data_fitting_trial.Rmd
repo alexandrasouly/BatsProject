@@ -13,6 +13,10 @@ output: html_notebook
   This s the original POMP model:
 ```{r pomp_model}
 library(pomp)
+library(ggplot2)
+library(foreach)
+library(iterators)
+library(dplyr)
 # stochastic discrete SIR model in POMP
 # no pop dyn.
 
@@ -101,7 +105,9 @@ dmeas <- Csnippet("lik = dbinom(pos, 100, I/N, give_log);")
 ```
 
 Now we re-specify the POMP model to include our data and the measurement process:
+As the soon following fitting methods are perturbing our parameters, we need to ensure they do not get negative. We do this with the POMP implemented log transform. 
 ``` {r re-specify model}
+param_trans =  parameter_trans(log=c("Beta","gamma"))
 
 trial_model <- pomp(data=test_data,
                    times="time",
@@ -111,6 +117,7 @@ trial_model <- pomp(data=test_data,
                    rinit=init1,
                    statenames=c("S","I","R", "p_SI", "p_IR", "n_SI", "n_IR"),
                    paramnames=c("Beta","gamma","N"),
+                   partrans = param_trans,
                    rmeasure = rmeas,
                    dmeasure = dmeas
                    )
@@ -119,7 +126,7 @@ trial_model <- pomp(data=test_data,
 We now simulate the number of positives and plot the actual number of positives we generated:
 ``` {r simulate positives}
 
-sim <- simulate(trial_model, params=params1, format = "data.frame", nsim = 5, ,include.data=TRUE)
+sim <- simulate(trial_model, params=params1, format = "data.frame", nsim = 5, include.data=TRUE)
 
 ggplot(data=sim,
        mapping=aes(x=time,y=pos))+
@@ -139,7 +146,7 @@ logmeanexp(ll,se=TRUE)
 plot(pf[[1]])
 
 
-params_bad <-c(Beta=0.1, gamma = 1/20, N= 5000)
+params_bad <-c(Beta=0.1, gamma = 1/20, N= 1000)
 pf2 <- replicate(10, pfilter(trial_model, params = params_bad ,Np=5000))
 
 ll <- sapply(pf2,logLik)
@@ -148,13 +155,86 @@ logmeanexp(ll,se=TRUE)
 plot(pf2[[1]])
 
 ```
-  This confirms that dmeasure is also working, our fit is pretty good! Now we try some fitting methods, like iterated particle filtering to improve the bad set of parameters:
+  This confirms that dmeasure is also working, our fit is pretty good as expected! Now we pretend we did not know the original paramters, and try some fitting methods, like iterated particle filtering.
   
-  THIS IS NOT WORKING, SORT THIS OUT:
+We start by constructing a Sobol grid to space the parameters appropriately. We set IF2 to estimate Beta and Gamma, with 30 iterations and 1000 particles. At each of the guesses of the Sobol grid (foreach (guess=), which are stored in the rows of the guesses data frame (iter(guesses,"row")), we run the 30 iterations of the IF2 algorithm (mif2). 
 ```{r}
-mif2(trial_model, params = params_bad, Nmif=30, Np=1000, 
+sobolDesign(
+  lower=c(Beta=0.01, gamma =1/100),
+  upper=c(Beta=2,gamma = 1/5),
+  nseq=100
+) -> guesses
+
+
+mif2( trial_model, params = params_bad, Nmif=30, Np=1000, 
      cooling.fraction.50=0.8,cooling.type="geometric",
-     rw.sd=rw.sd(Beta=0.02,gamma=0.02,N=0.02)
-) -> mf
-plot(mf)
+     rw.sd=rw.sd(Beta=0.02, gamma=0.02)
+) -> mf1
+
+library(foreach)
+
+foreach (guess=iter(guesses,"row"),
+  .combine=c, .packages=c("pomp"),
+  .errorhandling="stop", .inorder=FALSE) %dopar% {
+    
+    mf1 %>% mif2(params=c(guess, N=1000))
+    
+  } -> mifs
+
+mifs %>%
+  traces() %>%
+  melt() %>%
+  filter(variable!="N") %>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE)
+
 ```
+  This looks very promising! We see lots of particles converging to our original values, around Beta = 1, gamma = 0.076. We now need to evaluate the likelihood with some particle filters at the final iteration parameter estimates. Then, we choose the best start points that did not go far from th best starting point, and do some more filtering on them to be sure. We print out the table with the best estimates we get in the end.
+```{r}
+foreach (mf=mifs,
+  .combine=rbind, .packages=c("pomp"), 
+  .errorhandling="stop", .inorder=FALSE) %dopar% {
+    
+    replicate(5, 
+      mf %>% pfilter() %>% logLik()
+    ) %>%
+      logmeanexp(se=TRUE) -> ll
+    
+    data.frame(as.list(coef(mf)),loglik=ll[1],loglik.se=ll[2])
+    
+  } -> estimates
+
+estimates %>%
+  filter(!is.na(loglik)) %>%
+  filter(loglik > max(loglik)-30) %>%
+  select(-loglik,-loglik.se) -> starts
+
+foreach (start=iter(starts,"row"),
+  .combine=rbind, .packages=c("pomp"), 
+  .errorhandling="remove", .inorder=FALSE) %dopar% {
+    
+    mf1 %>% 
+      mif2(params=start) %>%
+      mif2() -> mf
+    
+    replicate(5, 
+      mf %>% pfilter() %>% logLik()
+    ) %>%
+      logmeanexp(se=TRUE) -> ll
+    
+    data.frame(as.list(coef(mf)),loglik=ll[1],loglik.se=ll[2])
+    
+  } -> ests1
+
+estimates %>%
+  rbind(ests1) -> estimates
+
+estimates%>%
+  arrange(-loglik)
+
+```
+Our winner estimate is Beta = 1.04562069, gamma = 0.09204026, which is pretty close to the actual values. We did not expect to get the same values back because of the random noise added onto the generated data, so I think this convinced me thta these methods are working the way I implemented the POMP model.  
+  
+My next step is writing the actual likelihood model for the full model, not just this baby version.

@@ -80,25 +80,24 @@ labs(title="Stochastic SIR model")
   Now we try to generate observations. We calculate the prevalence of the deterministic model, add a random normally distributed number with mean 0, sd 5, and round it to a non-negative integer to include some stochasticity.
   
 ```{r making the data}
-observations <- data.frame("days" = seq(1,51,by=10), "positives" = NA)
 
 traj %>% 
   filter(time %in% seq(1,51,by=10)) -> traj_filter
 
 floor(traj_filter$I*100/(traj_filter$S+traj_filter$I+traj_filter$R) ) -> traj_filter$prev
-pmax(0, floor(traj_filter$prev + rnorm(0, 5, n=6))) -> traj_filter$pos
+pmax(0, floor(traj_filter$prev + rnorm(0,5, n=6) )) -> traj_filter$pos
 
 traj_filter %>% select(time, pos) -> test_data
 
 test_data
 ```
-So now we have our data saved in test_data, the number of infecteds out of 100 samples, approxiamately matching the model's infection prevalence.  
+So now we have our data saved in test_data, the number of infecteds out of 100 samples, approximately matching the model's infection prevalence.  
 
   We can now write rmeasure and dmeasure, the first one is to draw, the second is to the likelihood of p(observation | current state of system and parameters).
 
 ``` {r measuring process}
 rmeas <- Csnippet("pos = rbinom(100, I/N);")
-dmeas <- Csnippet("lik = dbinom(pos, N, I/N, give_log);")
+dmeas <- Csnippet("lik = dbinom(pos, 100, I/N, give_log);")
 ```
 
 Now we re-specify the POMP model to include our data and the measurement process:
@@ -128,7 +127,34 @@ ggplot(data=sim,
   facet_wrap(~.id,ncol=1,scales="free_y")
 ```
 
-  We can see that in general the simulations followed the same shape, but all the peaks were a bit smaller than our generated data. This is not surprising, as in that case we added on with the normal distribution an extra ~10%, (the data had 82 instead of 76 from the trajectory). This confirms that rmeasure is working, we can simulate things we wanted! 
-  Now onto parameter fitting to test dmeasure:
+  We can see that in general the simulations followed the same shape. This confirms that rmeasure is working, we can simulate things we wanted! 
+  We can estimate the likelihood using a particle filter. params_good is the orignal value we used to create the data, so it should be a good fit. params_bad is an arbitrary set of parameters, to see if it gives us a worse likelihood. We print out the likelihoods of the 10 replications, and the plots of the effective sample size and conditional log likelihoods.
+```{r}
+params_good <- c(Beta=1, gamma = 1/13, N= 1000)
+pf <- replicate(10, pfilter(trial_model, params = params_good ,Np=5000))
 
+ll <- sapply(pf,logLik)
+logmeanexp(ll,se=TRUE)
+
+plot(pf[[1]])
+
+
+params_bad <-c(Beta=0.1, gamma = 1/20, N= 5000)
+pf2 <- replicate(10, pfilter(trial_model, params = params_bad ,Np=5000))
+
+ll <- sapply(pf2,logLik)
+logmeanexp(ll,se=TRUE)
+
+plot(pf2[[1]])
+
+```
+  This confirms that dmeasure is also working, our fit is pretty good! Now we try some fitting methods, like iterated particle filtering to improve the bad set of parameters:
   
+  THIS IS NOT WORKING, SORT THIS OUT:
+```{r}
+mif2(trial_model, params = params_bad, Nmif=30, Np=1000, 
+     cooling.fraction.50=0.8,cooling.type="geometric",
+     rw.sd=rw.sd(Beta=0.02,gamma=0.02,N=0.02)
+) -> mf
+plot(mf)
+```

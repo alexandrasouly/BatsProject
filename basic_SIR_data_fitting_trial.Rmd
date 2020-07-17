@@ -1,0 +1,134 @@
+---
+title: "Trying to add data and rmeasure to POMP model"
+output: html_notebook
+---
+  This is a baby attempt to include data and sampling process with likelihood function.
+
+  I am using the most basic closed stochastic SIR model, with initial states fixed.
+  I will want to fit gamma and beta.
+  I will be incuding data generated to more or less match gamma = 1/13, beta = 1 (unit is days here).
+  The data measures the number of positive individuals out of a sample of 100.
+  I want to see if it finds original parameters if it gets good data, to check whether my approach works at all.
+
+  This s the original POMP model:
+```{r pomp_model}
+library(pomp)
+# stochastic discrete SIR model in POMP
+# no pop dyn.
+
+# stochastic stepping process
+stochStep <- Csnippet("
+  p_SI = 1 - exp(-Beta*I/N);
+  p_IR = 1 - exp(-gamma);
+
+  n_SI = rbinom(S,p_SI);
+  n_IR = rbinom(I,p_IR);
+
+  S = S - n_SI;
+  I = I + n_SI - n_IR;
+  R = R + n_IR;
+
+")
+
+# deterministic skeleton
+skel <- Csnippet("
+  DS = S - Beta*S*I/N;
+  DI = I + Beta*S*I/N-gamma*I;
+  DR = R + gamma*I;
+")
+
+# initial values of states
+init1 <- Csnippet("
+  S = N-5;
+  I = 5;
+  R = 0;
+  ")
+
+params1 <- c(Beta=1, gamma = 1/13, N= 1000)
+
+
+closed_sir <- pomp(data=data.frame(time=1:51,data=NA),
+                   times="time",
+                   t0=0,
+                   rprocess=discrete_time(step.fun=stochStep,delta.t=1),
+                   skeleton = map(skel),
+                   rinit=init1,
+                   statenames=c("S","I","R", "p_SI", "p_IR", "n_SI", "n_IR"),
+                   paramnames=c("Beta","gamma","N"))
+
+
+
+
+sim <- simulate(closed_sir,params=params1,format = "data.frame", nsim = 100)
+
+traj <- trajectory(closed_sir,params=params1,format="data.frame")
+
+```
+Let's plot the model to see what we are working with:
+``` {r plot}
+ggplot(NULL)+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = I, group= factor(.id), colour = "Stochastic infected"))+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = R, group= factor(.id), colour = "Stochastic recovered"))+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = S, group= factor(.id), colour = "Stochastic susceptible"))+
+scale_color_discrete(name="Legend")+
+geom_line(data=traj, aes(x=time, y=I))+
+geom_line(data=traj, aes(x=time, y=R))+
+geom_line(data=traj, aes(x=time, y=S))+
+labs(title="Stochastic SIR model")
+```
+  
+  Now we try to generate observations. We calculate the prevalence of the deterministic model, add a random normally distributed number with mean 0, sd 5, and round it to a non-negative integer to include some stochasticity.
+  
+```{r making the data}
+observations <- data.frame("days" = seq(1,51,by=10), "positives" = NA)
+
+traj %>% 
+  filter(time %in% seq(1,51,by=10)) -> traj_filter
+
+floor(traj_filter$I*100/(traj_filter$S+traj_filter$I+traj_filter$R) ) -> traj_filter$prev
+pmax(0, floor(traj_filter$prev + rnorm(0, 5, n=6))) -> traj_filter$pos
+
+traj_filter %>% select(time, pos) -> test_data
+
+test_data
+```
+So now we have our data saved in test_data, the number of infecteds out of 100 samples, approxiamately matching the model's infection prevalence.  
+
+  We can now write rmeasure and dmeasure, the first one is to draw, the second is to the likelihood of p(observation | current state of system and parameters).
+
+``` {r measuring process}
+rmeas <- Csnippet("pos = rbinom(100, I/N);")
+dmeas <- Csnippet("lik = dbinom(pos, N, I/N, give_log);")
+```
+
+Now we re-specify the POMP model to include our data and the measurement process:
+``` {r re-specify model}
+
+trial_model <- pomp(data=test_data,
+                   times="time",
+                   t0=0,
+                   rprocess=discrete_time(step.fun=stochStep,delta.t=1),
+                   skeleton = map(skel),
+                   rinit=init1,
+                   statenames=c("S","I","R", "p_SI", "p_IR", "n_SI", "n_IR"),
+                   paramnames=c("Beta","gamma","N"),
+                   rmeasure = rmeas,
+                   dmeasure = dmeas
+                   )
+```
+
+We now simulate the number of positives and plot the actual number of positives we generated:
+``` {r simulate positives}
+
+sim <- simulate(trial_model, params=params1, format = "data.frame", nsim = 5, ,include.data=TRUE)
+
+ggplot(data=sim,
+       mapping=aes(x=time,y=pos))+
+  geom_line()+
+  facet_wrap(~.id,ncol=1,scales="free_y")
+```
+
+  We can see that in general the simulations followed the same shape, but all the peaks were a bit smaller than our generated data. This is not surprising, as in that case we added on with the normal distribution an extra ~10%, (the data had 82 instead of 76 from the trajectory). This confirms that rmeasure is working, we can simulate things we wanted! 
+  Now onto parameter fitting to test dmeasure:
+
+  

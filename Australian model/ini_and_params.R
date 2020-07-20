@@ -1,26 +1,26 @@
 inits<- function(){
   init_states <- Csnippet("
                         
-                        Ma = 0;
-                        Sn = 675;
-                        Sj = 575;
-                        Sm = 550;
-                        Sf = 550;
+                        Ma = 501;
+                        Sn = 3;
+                        Sj = 70;
+                        Sm = 3;
+                        Sf = 3;
                         
                         En = 0;
                         Ej = 0;
                         Em = 0;
                         Ef = 0;
                         
-                        In = 0;
-                        Ij = 0;
-                        Im = 27;
-                        If = 27;
+                        In = 3;
+                        Ij = 60;
+                        Im = 7;
+                        If = 7;
                         
-                        Rn = 0;
-                        Rj = 0;
-                        Rm = 0;
-                        Rf = 0;
+                        Rn = 4;
+                        Rj = 255;
+                        Rm = 479;
+                        Rf = 479;
                         
                         ")
   return(init_states)

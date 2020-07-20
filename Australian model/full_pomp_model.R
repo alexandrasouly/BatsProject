@@ -32,8 +32,8 @@ init_states <- inits()
 params <- c(
   
   # base dynamics params
-  beta_val = 0.00416, # infection rate S -> R
-  gamma_val = 3.13, # recovery rate I -> R
+  beta_val = 0.06, # infection rate S -> R
+  gamma_val = 3.135, # recovery rate I -> R
   omega_val = 0, # immune waning rate R -> S
   omega_m_val = 0.8, # maternal antibody waning rate
   kappa_val = 2350, # carrying capacity
@@ -45,9 +45,9 @@ params <- c(
   delta_t = 365, # scaling time as days instead of years
   
   # seasonality params
-  c = 18, # birth pulse scaling factor
+  c = 18.65, # birth pulse scaling factor
   s = 130, # birth pulse synchronicity
-  phi = 7.9, # birth pulse time shift
+  phi = 7.19, # birth pulse time shift
   
   # measuring process params
   zeta = 0.3, # test accuracy
@@ -57,7 +57,7 @@ params <- c(
 
 # creating the POMP object
 pomp_object <- pomp(data=pos_dat,
-                    times="time",t0=734,
+                    times="time",t0=735,
                     rprocess=discrete_time(step.fun=stochStep,delta.t=1),
                     rinit=init_states,
                     skeleton=map(det_model_skeleton, delta.t = 1),
@@ -67,6 +67,9 @@ pomp_object <- pomp(data=pos_dat,
                     dmeasure=dmeas,
                     covar=covar_samplesize
 )
+
+
+
 
 # simulating and calculating deterministic trajectory
 sim <- simulate(pomp_object,params=params,format = "data.frame", nsim = 100)

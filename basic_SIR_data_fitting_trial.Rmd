@@ -1,0 +1,240 @@
+---
+title: "Trying to add data and rmeasure to POMP model"
+output: html_notebook
+---
+  This is a baby attempt to include data and sampling process with likelihood function.
+
+  I am using the most basic closed stochastic SIR model, with initial states fixed.
+  I will want to fit gamma and beta.
+  I will be incuding data generated to more or less match gamma = 1/13, beta = 1 (unit is days here).
+  The data measures the number of positive individuals out of a sample of 100.
+  I want to see if it finds original parameters if it gets good data, to check whether my approach works at all.
+
+  This s the original POMP model:
+```{r pomp_model}
+library(pomp)
+library(ggplot2)
+library(foreach)
+library(iterators)
+library(dplyr)
+# stochastic discrete SIR model in POMP
+# no pop dyn.
+
+# stochastic stepping process
+stochStep <- Csnippet("
+  p_SI = 1 - exp(-Beta*I/N);
+  p_IR = 1 - exp(-gamma);
+
+  n_SI = rbinom(S,p_SI);
+  n_IR = rbinom(I,p_IR);
+
+  S = S - n_SI;
+  I = I + n_SI - n_IR;
+  R = R + n_IR;
+
+")
+
+# deterministic skeleton
+skel <- Csnippet("
+  DS = S - Beta*S*I/N;
+  DI = I + Beta*S*I/N-gamma*I;
+  DR = R + gamma*I;
+")
+
+# initial values of states
+init1 <- Csnippet("
+  S = N-5;
+  I = 5;
+  R = 0;
+  ")
+
+params1 <- c(Beta=1, gamma = 1/13, N= 1000)
+
+
+closed_sir <- pomp(data=data.frame(time=1:51,data=NA),
+                   times="time",
+                   t0=0,
+                   rprocess=discrete_time(step.fun=stochStep,delta.t=1),
+                   skeleton = map(skel),
+                   rinit=init1,
+                   statenames=c("S","I","R", "p_SI", "p_IR", "n_SI", "n_IR"),
+                   paramnames=c("Beta","gamma","N"))
+
+
+
+
+sim <- simulate(closed_sir,params=params1,format = "data.frame", nsim = 100)
+
+traj <- trajectory(closed_sir,params=params1,format="data.frame")
+
+```
+Let's plot the model to see what we are working with:
+``` {r plot}
+ggplot(NULL)+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = I, group= factor(.id), colour = "Stochastic infected"))+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = R, group= factor(.id), colour = "Stochastic recovered"))+
+geom_line(data=sim, alpha = 0.05,aes(x=time, y = S, group= factor(.id), colour = "Stochastic susceptible"))+
+scale_color_discrete(name="Legend")+
+geom_line(data=traj, aes(x=time, y=I))+
+geom_line(data=traj, aes(x=time, y=R))+
+geom_line(data=traj, aes(x=time, y=S))+
+labs(title="Stochastic SIR model")
+```
+  
+  Now we try to generate observations. We calculate the prevalence of the deterministic model, add a random normally distributed number with mean 0, sd 5, and round it to a non-negative integer to include some stochasticity.
+  
+```{r making the data}
+
+traj %>% 
+  filter(time %in% seq(1,51,by=10)) -> traj_filter
+
+floor(traj_filter$I*100/(traj_filter$S+traj_filter$I+traj_filter$R) ) -> traj_filter$prev
+pmax(0, floor(traj_filter$prev + rnorm(0,5, n=6) )) -> traj_filter$pos
+
+traj_filter %>% select(time, pos) -> test_data
+
+test_data
+```
+So now we have our data saved in test_data, the number of infecteds out of 100 samples, approximately matching the model's infection prevalence.  
+
+  We can now write rmeasure and dmeasure, the first one is to draw, the second is to the likelihood of p(observation | current state of system and parameters).
+
+``` {r measuring process}
+rmeas <- Csnippet("pos = rbinom(100, I/N);")
+dmeas <- Csnippet("lik = dbinom(pos, 100, I/N, give_log);")
+```
+
+Now we re-specify the POMP model to include our data and the measurement process:
+As the soon following fitting methods are perturbing our parameters, we need to ensure they do not get negative. We do this with the POMP implemented log transform. 
+``` {r re-specify model}
+param_trans =  parameter_trans(log=c("Beta","gamma"))
+
+trial_model <- pomp(data=test_data,
+                   times="time",
+                   t0=0,
+                   rprocess=discrete_time(step.fun=stochStep,delta.t=1),
+                   skeleton = map(skel),
+                   rinit=init1,
+                   statenames=c("S","I","R", "p_SI", "p_IR", "n_SI", "n_IR"),
+                   paramnames=c("Beta","gamma","N"),
+                   partrans = param_trans,
+                   rmeasure = rmeas,
+                   dmeasure = dmeas
+                   )
+```
+
+We now simulate the number of positives and plot the actual number of positives we generated:
+``` {r simulate positives}
+
+sim <- simulate(trial_model, params=params1, format = "data.frame", nsim = 5, include.data=TRUE)
+
+ggplot(data=sim,
+       mapping=aes(x=time,y=pos))+
+  geom_line()+
+  facet_wrap(~.id,ncol=1,scales="free_y")
+```
+
+  We can see that in general the simulations followed the same shape. This confirms that rmeasure is working, we can simulate things we wanted! 
+  We can estimate the likelihood using a particle filter. params_good is the orignal value we used to create the data, so it should be a good fit. params_bad is an arbitrary set of parameters, to see if it gives us a worse likelihood. We print out the likelihoods of the 10 replications, and the plots of the effective sample size and conditional log likelihoods.
+```{r}
+params_good <- c(Beta=1, gamma = 1/13, N= 1000)
+pf <- replicate(10, pfilter(trial_model, params = params_good ,Np=5000))
+
+ll <- sapply(pf,logLik)
+logmeanexp(ll,se=TRUE)
+
+plot(pf[[1]])
+
+
+params_bad <-c(Beta=0.1, gamma = 1/20, N= 1000)
+pf2 <- replicate(10, pfilter(trial_model, params = params_bad ,Np=5000))
+
+ll <- sapply(pf2,logLik)
+logmeanexp(ll,se=TRUE)
+
+plot(pf2[[1]])
+
+```
+  This confirms that dmeasure is also working, our fit is pretty good as expected! Now we pretend we did not know the original paramters, and try some fitting methods, like iterated particle filtering.
+  
+We start by constructing a Sobol grid to space the parameters appropriately. We set IF2 to estimate Beta and Gamma, with 30 iterations and 1000 particles. At each of the guesses of the Sobol grid (foreach (guess=), which are stored in the rows of the guesses data frame (iter(guesses,"row")), we run the 30 iterations of the IF2 algorithm (mif2). 
+```{r}
+sobolDesign(
+  lower=c(Beta=0.01, gamma =1/100),
+  upper=c(Beta=2,gamma = 1/5),
+  nseq=100
+) -> guesses
+
+
+mif2( trial_model, params = params_bad, Nmif=30, Np=1000, 
+     cooling.fraction.50=0.8,cooling.type="geometric",
+     rw.sd=rw.sd(Beta=0.02, gamma=0.02)
+) -> mf1
+
+library(foreach)
+
+foreach (guess=iter(guesses,"row"),
+  .combine=c, .packages=c("pomp"),
+  .errorhandling="stop", .inorder=FALSE) %dopar% {
+    
+    mf1 %>% mif2(params=c(guess, N=1000))
+    
+  } -> mifs
+
+mifs %>%
+  traces() %>%
+  melt() %>%
+  filter(variable!="N") %>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE)
+
+```
+  This looks very promising! We see lots of particles converging to our original values, around Beta = 1, gamma = 0.076. We now need to evaluate the likelihood with some particle filters at the final iteration parameter estimates. Then, we choose the best start points that did not go far from th best starting point, and do some more filtering on them to be sure. We print out the table with the best estimates we get in the end.
+```{r}
+foreach (mf=mifs,
+  .combine=rbind, .packages=c("pomp"), 
+  .errorhandling="stop", .inorder=FALSE) %dopar% {
+    
+    replicate(5, 
+      mf %>% pfilter() %>% logLik()
+    ) %>%
+      logmeanexp(se=TRUE) -> ll
+    
+    data.frame(as.list(coef(mf)),loglik=ll[1],loglik.se=ll[2])
+    
+  } -> estimates
+
+estimates %>%
+  filter(!is.na(loglik)) %>%
+  filter(loglik > max(loglik)-30) %>%
+  select(-loglik,-loglik.se) -> starts
+
+foreach (start=iter(starts,"row"),
+  .combine=rbind, .packages=c("pomp"), 
+  .errorhandling="remove", .inorder=FALSE) %dopar% {
+    
+    mf1 %>% 
+      mif2(params=start) %>%
+      mif2() -> mf
+    
+    replicate(5, 
+      mf %>% pfilter() %>% logLik()
+    ) %>%
+      logmeanexp(se=TRUE) -> ll
+    
+    data.frame(as.list(coef(mf)),loglik=ll[1],loglik.se=ll[2])
+    
+  } -> ests1
+
+estimates %>%
+  rbind(ests1) -> estimates
+
+estimates%>%
+  arrange(-loglik)
+
+```
+Our winner estimate is Beta = 1.04562069, gamma = 0.09204026, which is pretty close to the actual values. We did not expect to get the same values back because of the random noise added onto the generated data, so I think this convinced me thta these methods are working the way I implemented the POMP model.  
+  
+My next step is writing the actual likelihood model for the full model, not just this baby version.

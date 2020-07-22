@@ -1,4 +1,8 @@
 # loading observed data
+library(dplyr)
+library(ggplot2)
+library(pomp)
+
 source("load_data.R")
 data <-load_data(site = "CLU", year = "2019")
 samplesize_dat <- data[[1]]
@@ -26,34 +30,12 @@ rmeas <- measure_processes[[2]]
 source("ini_and_params.R")
 state_names <- states()
 param_names <- params()
-init_states <- inits()
 
-# specifying parameter values
-params <- c(
-  
-  # base dynamics params
-  beta_val = 0.06, # infection rate S -> R
-  gamma_val = 3.135, # recovery rate I -> R
-  omega_val = 0, # immune waning rate R -> S
-  omega_m_val = 0.8, # maternal antibody waning rate
-  kappa_val = 2350, # carrying capacity
-  rho_val = 0, # I -> L 
-  epsilon_val = 0, # L -> I 
-  mu_val = 0.44, # juvenile maturation rate
-  mj_val = 0.50, # juvenile death rate
-  m_val = 0.23, # adult death rate
-  delta_t = 365, # scaling time as days instead of years
-  
-  # seasonality params
-  c = 18.65, # birth pulse scaling factor
-  s = 130, # birth pulse synchronicity
-  phi = 7.19, # birth pulse time shift
-  
-  # measuring process params
-  zeta = 0.3, # test accuracy
-  disp = 1000, # dispersion parameter
-  d = 10 # number of bats contributing to the same pool
-)
+
+source("aarons_params.R")
+init_states <- model_5_after_equ_ini
+params <- model_5_params
+
 
 # creating the POMP object
 pomp_object <- pomp(data=pos_dat,
@@ -68,7 +50,16 @@ pomp_object <- pomp(data=pos_dat,
                     covar=covar_samplesize
 )
 
-
+# pop_equ_pomp_model <- pomp(data=data.frame("time" = seq(1, 365*50)),
+#                              times="time",t0=0,
+#                              rprocess=discrete_time(step.fun=stochStep,delta.t=1),
+#                              rinit=model_5_before_equ_ini,
+#                              skeleton=map(det_model_skeleton, delta.t = 1),
+#                              statenames=state_names,
+#                              paramnames=param_names
+# )
+# 
+# pop_equ <- trajectory(pop_equ_pomp_model, params=model_5_params,format="d")
 
 
 # simulating and calculating deterministic trajectory
@@ -90,12 +81,20 @@ sim_plus_data %>% mutate(true_test_prev = true_pos/samplesize, sim_test_prev = p
 
 source("plots.R")
 plots <- plots(sim_plus_data, x, sim)
-names(plots) <- c("plprev", 
-                     "plIm", "plRm", "plSm", 
+names(plots) <- c(   "plIm", "plRm", "plSm", 
                      "plIj", "plRj", "plSj", 
                      "plIn", "plRn", "plSn",
                      "plMa")
 
 
+# plotting prevalence from tests and actual from the model
+
+ggplot(NULL)+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_model_prev, group= factor(.id), colour = "Simulated model prevalence"
+  ))+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = true_test_prev, group= factor(.id), colour = "2019 Clunes underroost prevalence"
+  ))+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_test_prev, group= factor(.id), colour = "Simulated underroost prevalence"
+  ))->plprev
 
 

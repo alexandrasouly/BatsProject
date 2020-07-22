@@ -4,7 +4,7 @@ beta_from_r0 <-function(R0, m, gamma, kappa, epsilon, rho){
 }
 
 
-beta<-beta_from_r0(42.152, 0.23, 3.135, 2350, 0, 0)
+beta<-beta_from_r0(13.395, 0.187, 22.449, 4216, 0, 0)
 
 
 ini_pop_size <-function(m, mj, mu, kappa, omega_m){
@@ -16,6 +16,7 @@ ini_pop_size <-function(m, mj, mu, kappa, omega_m){
   params <- c(N, Na, Nj, Nn)
 }
 
-params <-ini_pop_size(0.23, 0.5, 0.44, 2350, 0.8)
-params
+pop_size <-ini_pop_size( model_6_params[["m_val"]], model_6_params[["mj_val"]] ,
+                         model_6_params[["mu_val"]], model_6_params[["kappa_val"]], model_6_params[["omega_m_val"]])
+pop_size
 

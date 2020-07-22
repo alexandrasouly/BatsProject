@@ -1,30 +1,4 @@
-inits<- function(){
-  init_states <- Csnippet("
-                        
-                        Ma = 501;
-                        Sn = 3;
-                        Sj = 70;
-                        Sm = 3;
-                        Sf = 3;
-                        
-                        En = 0;
-                        Ej = 0;
-                        Em = 0;
-                        Ef = 0;
-                        
-                        In = 3;
-                        Ij = 60;
-                        Im = 7;
-                        If = 7;
-                        
-                        Rn = 4;
-                        Rj = 255;
-                        Rm = 479;
-                        Rf = 479;
-                        
-                        ")
-  return(init_states)
-}
+
 
 states <- function(){
 

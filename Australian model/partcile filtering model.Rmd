@@ -1,5 +1,5 @@
 ---
-title: "particle filtering model"
+title: "Trying particle filtering on SIR model"
 output: html_notebook
 ---
 ```{r}
@@ -12,7 +12,7 @@ library(ggplot2)
 library(pomp)
 ```
 
-We calculate conditional likelihood of SIR with no seasonal forcing at Aaron's posterior parameter values (model 5).
+We use the 2019 Clunes data. We calculate conditional likelihood of SIR with no seasonal forcing at Aaron's posterior parameter values (model 5). We take m, mj, mu and kappa as fixed
 ```{r}
 pf <- replicate(5, pfilter(pomp_object, params = params, Np=2000))
 
@@ -23,27 +23,16 @@ plot(pf[[1]])
 ```
 
 We set IF2 to estimate the parameters with 40 iterations and 2000 particles.
+We replicate it 10 times. Then we evaluate the log-likelihood at the result values witha particle filter.
 ```{r}
 
 
-replicate( 10, mif2( pomp_object, params = model_5_params, Nmif=40, Np=2000, 
+replicate( 10, mif2( pomp_object, params = model_5_params, Nmif=50, Np=3000, 
      cooling.fraction.50=0.8,cooling.type="geometric",
      rw.sd=rw.sd(R0=0.02, gamma_val= 0.02, omega_m_val=0.02, zeta=0.02, c=0.02,
                  s=0.02, phi=0.02, disp=0.02, d=0.02)
 )) -> mf1
 
-
-foreach(start = iter(mf1)) %dopar% {
-start %>%
-  traces() %>%
-  melt() %>%
-  filter(variable %in% c("loglik","R0", "gamma_val", "omega_m_val", "zeta", "c",
-                 "s", "phi", "disp", "d")) %>%
-  ggplot(aes(x=iteration,y=value))+
-  geom_line()+
-  facet_wrap(~variable,scales="free_y")+
-  guides(color=FALSE)
-}
 
 # evaluate the log likelihood here
 foreach(start = iter(mf1), .combine=rbind) %dopar% {replicate(5, 
@@ -72,10 +61,16 @@ start %>%
   traces() %>%
   melt() %>%
   filter(variable %in% c("loglik","R0", "gamma_val", "omega_m_val", "zeta", "c",
-                 "s", "phi", "disp", "d")) %>%
-  ggplot(aes(x=iteration,y=value))+
-  geom_line()+
-  facet_wrap(~variable,scales="free_y")+
-  guides(color=FALSE)
+                 "s", "phi", "disp", "d"))} -> filtered_plots
+  
+line_object = ggplot(NULL)
+for (i in seq(1,10)){
+line_object <- line_object + 
+                geom_line(data = filtered_plots[[i]], aes(x=iteration,y=value))
 }
+line_object+
+facet_wrap(~variable, scales="free_y")+
+guides(color=FALSE)
+
+
 ```

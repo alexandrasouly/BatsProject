@@ -13,7 +13,6 @@ det_model_skeleton <- function(){
                       double N = (Sn + Sj + Sm + Sf + En + Ej + Em + Ef + In + Ij + Im + If +
                         Rn + Rj + Rm + Rf + Ma);
                       
-                      double beta_v = beta_val / delta_t;
                       
                       double gamma;
                       if (model_type == 1) {
@@ -48,6 +47,10 @@ det_model_skeleton <- function(){
                       
                       double Sbirths = b * (Sf + If) / delta_t;
                       double MaBirths = b * (Rf + Ef) / delta_t;
+                      
+                      double beta_val =  R0 *((epsilon_val + m_val)*(gamma_val + m_val + rho_val)
+                                          -epsilon_val*rho_val) / (kappa_val*(epsilon_val + m_val));
+                      double beta_v = beta_val / delta_t;
                       
                       double betSN = omega_m + mj * (N / kappa) + beta_v * (If + Im + Ij + In);
                       double betSj = mu + mj * (N / kappa) + (beta_v) * (If + Im + In + Ij);

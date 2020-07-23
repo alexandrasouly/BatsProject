@@ -13,8 +13,6 @@ stochStep <- function(){
   double N = (Sn + Sj + Sm + Sf + En + Ej + Em + Ef + In + Ij + Im + If +
     Rn + Rj + Rm + Rf + Ma);
   
-  double beta = beta_val / delta_t;
-  
   double gamma;
   if (model_type == 1) {
     gamma = sdrive * gamma_val / delta_t;
@@ -57,6 +55,10 @@ stochStep <- function(){
   
   double r_N_J = omega_m;
   double r_J_A = mu;
+  
+  double beta_val =  R0 *((epsilon_val + m_val)*(gamma_val + m_val + rho_val)
+                  -epsilon_val*rho_val) / (kappa_val*(epsilon_val + m_val));
+  double beta = beta_val / delta_t;
   
   double r_R_S = omega;
   double r_I_E = rho;

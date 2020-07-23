@@ -12,7 +12,7 @@ states <- function(){
 }
 
 params <- function(){
-  param_names <- c("model_type", "beta_val", "gamma_val", "omega_val", "omega_m_val", "kappa_val", "rho_val", 
+  param_names <- c("model_type", "R0", "gamma_val", "omega_val", "omega_m_val", "kappa_val", "rho_val", 
                 "epsilon_val", "mu_val", "mj_val", "m_val",  "delta_t",  "c", "s", "phi", "c_v", "s_v", "phi_v",
                 "zeta", "disp", "d")
   return(param_names)

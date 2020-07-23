@@ -45,21 +45,23 @@ pomp_object <- pomp(data=pos_dat,
                     skeleton=map(det_model_skeleton, delta.t = 1),
                     statenames=state_names,
                     paramnames=param_names,
+                    partrans=parameter_trans(log=c("R0","c","s", "phi", "disp", "d", "gamma_val", "omega_m_val"),
+                                             logit = c("zeta")),
                     rmeasure=rmeas,
                     dmeasure=dmeas,
                     covar=covar_samplesize
 )
 
-pop_equ_pomp_model <- pomp(data=data.frame("time" = seq(1, 365*50)),
-                             times="time",t0=0,
-                             rprocess=discrete_time(step.fun=stochStep,delta.t=1),
-                             rinit=model_6_after_equ_ini,
-                             skeleton=map(det_model_skeleton, delta.t = 1),
-                             statenames=state_names,
-                             paramnames=param_names
-)
-
-pop_equ <- trajectory(pop_equ_pomp_model, params=model_6_params,format="d")
+# pop_equ_pomp_model <- pomp(data=data.frame("time" = seq(1, 365*50)),
+#                               times="time",t0=0,
+#                               rprocess=discrete_time(step.fun=stochStep,delta.t=1),
+#                               rinit=model_5_before_equ_ini,
+#                               skeleton=map(det_model_skeleton, delta.t = 1),
+#                               statenames=state_names,
+#                               paramnames=param_names
+#  )
+# 
+#  pop_equ <- trajectory(pop_equ_pomp_model, params=model_5_params,format="d")
 
 
 # simulating and calculating deterministic trajectory

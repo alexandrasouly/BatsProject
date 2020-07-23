@@ -1,0 +1,81 @@
+---
+title: "particle filtering model"
+output: html_notebook
+---
+```{r}
+source("full_pomp_model.R")
+
+library(foreach)
+library(iterators)
+library(dplyr)
+library(ggplot2)
+library(pomp)
+```
+
+We calculate conditional likelihood of SIR with no seasonal forcing at Aaron's posterior parameter values (model 5).
+```{r}
+pf <- replicate(5, pfilter(pomp_object, params = params, Np=2000))
+
+ll <- sapply(pf,logLik)
+logmeanexp(ll,se=TRUE)
+
+plot(pf[[1]])
+```
+
+We set IF2 to estimate the parameters with 40 iterations and 2000 particles.
+```{r}
+
+
+replicate( 10, mif2( pomp_object, params = model_5_params, Nmif=40, Np=2000, 
+     cooling.fraction.50=0.8,cooling.type="geometric",
+     rw.sd=rw.sd(R0=0.02, gamma_val= 0.02, omega_m_val=0.02, zeta=0.02, c=0.02,
+                 s=0.02, phi=0.02, disp=0.02, d=0.02)
+)) -> mf1
+
+
+foreach(start = iter(mf1)) %dopar% {
+start %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik","R0", "gamma_val", "omega_m_val", "zeta", "c",
+                 "s", "phi", "disp", "d")) %>%
+  ggplot(aes(x=iteration,y=value))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE)
+}
+
+# evaluate the log likelihood here
+foreach(start = iter(mf1), .combine=rbind) %dopar% {replicate(5, 
+      start %>% pfilter() %>% logLik()
+    ) %>%
+      logmeanexp(se=TRUE) -> ll} -> ll_list
+
+    
+mf1_coef <- rbind(
+  coef(mf1[[1]]), coef(mf1[[2]]), coef(mf1[[3]]), coef(mf1[[4]]), coef(mf1[[5]]),
+  coef(mf1[[6]]), coef(mf1[[7]]), coef(mf1[[8]]), coef(mf1[[9]]), coef(mf1[[10]])
+                  )
+    data.frame(mf1_coef,loglik=ll_list[,1],loglik.se=ll_list[,2]) -> estimates
+    
+    estimates %>% select("loglik", "loglik.se","R0", "gamma_val", 
+                         "omega_m_val", "zeta", "c",
+                          "s", "phi", "disp", "d")  %>% arrange(-loglik)
+
+```
+
+
+
+``` {r}
+foreach(start = iter(mf1)) %dopar% {
+start %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik","R0", "gamma_val", "omega_m_val", "zeta", "c",
+                 "s", "phi", "disp", "d")) %>%
+  ggplot(aes(x=iteration,y=value))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE)
+}
+```

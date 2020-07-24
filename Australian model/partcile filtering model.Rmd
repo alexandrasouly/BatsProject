@@ -12,7 +12,8 @@ library(ggplot2)
 library(pomp)
 ```
 
-We use the 2019 Clunes data. We calculate conditional likelihood of SIR with no seasonal forcing at Aaron's posterior parameter values (model 5). We take m, mj, mu and kappa as fixed
+We use the 2019 Clunes data here.  
+We calculate conditional likelihood of SIR with no seasonal forcing at Aaron's posterior parameter values (model 5). We take m, mj, mu and kappa (= 5000) as fixed, since these are more or less fixed from literature and Clunes usually has a population between 4000 and 6000 bats. 
 ```{r}
 pf <- replicate(5, pfilter(pomp_object, params = params, Np=2000))
 
@@ -22,8 +23,8 @@ logmeanexp(ll,se=TRUE)
 plot(pf[[1]])
 ```
 
-We set IF2 to estimate the parameters with 40 iterations and 2000 particles.
-We replicate it 10 times. Then we evaluate the log-likelihood at the result values witha particle filter.
+We set IF2 to estimate the parameters with 50 iterations and 3000 particles.
+We replicate it 10 times. Then we evaluate the log-likelihood at the result values with a particle filter.
 ```{r}
 
 
@@ -74,3 +75,192 @@ guides(color=FALSE)
 
 
 ```
+```{r mean estimates}
+mean(estimates$R0)
+mean(estimates$gamma_val)
+mean(estimates$omega_m_val)
+```
+  Here we can see that R0 is around 11 in all the trajectories, gamma is certainly more than our starting value, and is around 9.33 on average, and also omega_m is higher, around 4.9 on average. The other values don't seem to be converging. 
+  Now, to use the best  new estimates for parameters as the starting values, I will need to calculate the new starting population equilibrium state with these parameters, and fit again to that to see if the likelihood actually improved when starting from the right state. 
+```{r improved params}
+model_5_improved_params <- c(
+  
+  # base dynamics params
+  model_type = 1, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only 
+  
+  R0 =  10.58,
+  gamma_val = 10.62, # recovery rate I -> R
+  omega_val = 0, # immune waning rate R -> S
+  omega_m_val = 6.27, # maternal antibody waning rate
+  kappa_val = 5000, # carrying capacity for Clunes
+  rho_val = 0, # I -> L 
+  epsilon_val = 0, # L -> I
+  
+
+  mu_val = 1.37, # juvenile maturation rate
+  mj_val = 0.50, # juvenile death rate
+  m_val = 0.23, # adult death rate
+  delta_t = 365, # scaling time as days instead of years
+  
+  # seasonality params
+  c = 35, # birth pulse scaling factor
+  s = 204, # birth pulse synchronicity
+  phi = 9.02, # birth pulse time shift
+  
+  c_v = 1, # seasonal drive scaling factor
+  s_v = 0, # seasonal drive synchronicity
+  phi_v = 0, # sesonal drive time shift
+  
+  # measuring process params
+  zeta = 0.156, # test accuracy
+  disp = 1004, # dispersion parameter
+  d = 8 # number of bats contributing to the same pool
+  
+)
+
+pop_equ_pomp_model <- pomp(data=data.frame("time" = seq(1, 365*50)),
+                              times="time",t0=0,
+                              rprocess=discrete_time(step.fun=stochStep,delta.t=1),
+                              rinit=model_5_before_equ_ini,
+                              skeleton=map(det_model_skeleton, delta.t = 1),
+                              statenames=state_names,
+                              paramnames=param_names
+ )
+
+ pop_equ <- trajectory(pop_equ_pomp_model, params=model_5_improved_params,format="d")
+ tail(pop_equ, 1)
+
+```
+  We set the initial states accordingly and recalculate the model:
+  
+```{r ini states}
+   # 50 years waiting for equilibria 
+ model_5_improved_after_equ_ini <- Csnippet("
+                        
+                        Ma = 43;
+                        Sn = 0;
+                        Sj = 86;
+                        Sm = 11;
+                        Sf = 11;
+                        
+                        En = 0;
+                        Ej = 0;
+                        Em = 0;
+                        Ef = 0;
+                        
+                        In = 0;
+                        Ij = 46;
+                        Im = 16;
+                        If = 16;
+                        
+                        Rn = 0;
+                        Rj = 1231;
+                        Rm = 2965;
+                        Rf = 2965;
+                        
+                        ")
+improved_pomp_object <- pomp(pomp_object, rinit = model_5_improved_after_equ_ini,
+                             statenames = state_names)
+
+sim <- simulate(improved_pomp_object,params=model_5_improved_params,format = "data.frame", nsim = 100)
+x <- trajectory(improved_pomp_object,params=model_5_improved_params,format="d")
+
+
+colnames(pos_dat) <-c("time", "true_pos")
+sim_plus_data <- merge(sim, pos_dat, by.sim = "time")
+sim_plus_data <- merge(sim_plus_data, samplesize_dat, by.sim_plus_data = "time")
+sim_plus_data %>% mutate(true_test_prev = true_pos/samplesize, sim_test_prev = pos/samplesize,
+                         sim_model_prev = (In + Ij + Im + If)/
+                           (Sn + Sj + Sm + Sf + En + Ej + 
+                              Em + Ef + In + Ij + Im + If +
+                              Rn + Rj + Rm + Rf + Ma)
+) -> sim_plus_data
+
+
+
+source("plots.R")
+plots <- plots(sim_plus_data, x, sim)
+names(plots) <- c(   "plIm", "plRm", "plSm", 
+                     "plIj", "plRj", "plSj", 
+                     "plIn", "plRn", "plSn",
+                     "plMa")
+
+
+# plotting prevalence from tests and actual from the model
+
+ggplot(NULL)+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_model_prev, group= factor(.id), colour = "Simulated model prevalence"
+  ))+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = true_test_prev, group= factor(.id), colour = "2019 Clunes underroost prevalence"
+  ))+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_test_prev, group= factor(.id), colour = "Simulated underroost prevalence"
+  ))->plprev
+
+ggarrange(plotlist = plots, ncol = 3)
+plot(plprev)
+
+
+```
+This fitted to the last peak of the underroost prevalence. As this model has no seasonality beside births, I am not sure it could do much better replicating the peaks. Let us calculate the likelihood to compare with what we had at the very beginning. It is actually higher than what we started with. I think this is because when we change the parameters to fit, we cann't change the initial population dynamics and we are fitting to something that is no longer the population equilibrium state under the new parameters. How could we overcome this?
+```{r}
+pf <- replicate(5, pfilter(improved_pomp_object, params = model_5_improved_params, Np=2000))
+
+ll <- sapply(pf,logLik)
+logmeanexp(ll,se=TRUE)
+
+plot(pf[[1]])
+```
+ Now even if this approach doesnt seem to be working, lets try iterated filtering again as I'm just curious if there is some convergence this time. 
+```{r}
+mif2( improved_pomp_object, params = model_5_improved_params, Nmif=30, Np=2000, 
+     cooling.fraction.50=0.8,cooling.type="geometric",
+     rw.sd=rw.sd(R0=0.02, gamma_val= 0.02, omega_m_val=0.02, zeta=0.02, c=0.02,
+                 s=0.02, phi=0.02, disp=0.02, d=0.02)
+) -> mf1
+
+replicate( 10, mif2( improved_pomp_object, params = model_5_improved_params, Nmif=50, Np=3000, 
+     cooling.fraction.50=0.8,cooling.type="geometric",
+     rw.sd=rw.sd(R0=0.02, gamma_val= 0.02, omega_m_val=0.02, zeta=0.02, c=0.02,
+                 s=0.02, phi=0.02, disp=0.02, d=0.02)
+)) -> mf
+
+
+# evaluate the log likelihood here
+foreach(start = iter(mf), .combine=rbind) %dopar% {replicate(5, 
+      start %>% pfilter() %>% logLik()
+    ) %>%
+      logmeanexp(se=TRUE) -> ll} -> ll_list
+
+    
+mf1_coef <- rbind(
+  coef(mf[[1]]), coef(mf[[2]]), coef(mf[[3]]), coef(mf[[4]]), coef(mf[[5]]),
+  coef(mf[[6]]), coef(mf[[7]]), coef(mf[[8]]), coef(mf[[9]]), coef(mf[[10]])
+                  )
+    data.frame(mf1_coef,loglik=ll_list[,1],loglik.se=ll_list[,2]) -> estimates
+    
+    estimates %>% select("loglik", "loglik.se","R0", "gamma_val", 
+                         "omega_m_val", "zeta", "c",
+                          "s", "phi", "disp", "d")  %>% arrange(-loglik)
+
+```
+  
+``` {r}
+foreach(start = iter(mf)) %dopar% {
+start %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik","R0", "gamma_val", "omega_m_val", "zeta", "c",
+                 "s", "phi", "disp", "d"))} -> filtered_plots
+  
+line_object = ggplot(NULL)
+for (i in seq(1,10)){
+line_object <- line_object + 
+                geom_line(data = filtered_plots[[i]], aes(x=iteration,y=value))
+}
+line_object+
+facet_wrap(~variable, scales="free_y")+
+guides(color=FALSE)
+
+
+``` 
+  So indeed we see that this method is not really working well. I need to figure out how to do this so that the initial popultion equlibria do not mess things up. 

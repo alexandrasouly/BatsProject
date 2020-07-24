@@ -6,7 +6,7 @@ measure_processes <- function(){
                           double I_total =  In + Ij + Im + If;
                           double p = zeta * I_total / N;
                           double p_pool = 1 - pow((1 - p), d);
-                          lik = dbetabinom(pos, samplesize, p_pool, 
+                          lik = dbetabinom(pos, samplesize, p_pool+0.00001, 
                                            disp, give_log);
                           ")
   

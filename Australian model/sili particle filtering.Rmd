@@ -1,0 +1,215 @@
+---
+title: "Trying particle filtering on SILI with maternal immunity and seasonality model"
+output: html_notebook
+---
+```{r}
+source("full_pomp_model.R")
+
+library(foreach)
+library(iterators)
+library(dplyr)
+library(ggplot2)
+library(pomp)
+library(ggpubr)
+ggarrange(plotlist = plots, ncol = 4)
+plprev
+```
+
+We use the 3 years of Clunes data here. The red line is the collected underroost data, the blue lines are our simulated underroost test results. We see that this looks like a reasonable fit to start with.  
+  
+We calculate the likelihood of SILI with  seasonal forcing at Aaron's posterior parameter values (model 4). We take m, mj, mu and kappa (= 5000) as fixed, since these are more or less fixed from literature and Clunes usually has a population between 4000 and 6000 bats. 
+```{r}
+pf <- replicate(5, pfilter(pomp_object, params = params, Np=2000))
+
+ll <- sapply(pf,logLik)
+logmeanexp(ll,se=TRUE)
+
+plot(pf[[1]])
+```
+  With these parameters, we get the estimate for loglikelihood as -114 (with very low standard error). On the diagnostic plot, we can see that the first starting peak is causing the most trouble.  
+
+I attempt to compute in parrallel on multiple (3) cores on my laptop and I am setting a parallel RNG.  
+We set IF2 to estimate the parameters with 50 iterations and 2000 particles.
+We replicate it 20 times. Then we evaluate the log-likelihood at the result values with a particle filter.
+```{r iterated filtering}
+
+library(doParallel)
+registerDoParallel()
+library(doRNG)
+registerDoRNG(625904618)
+library(pomp)
+
+```
+
+```{r}
+
+foreach(i = 1:5, .combine=c, .packages = "pomp") %dopar%
+{mif2( pomp_object, params = model_4_params, Nmif=30, Np=2000, 
+     cooling.fraction.50=0.5,cooling.type="geometric",
+     rw.sd=rw.sd(R0=0.02, omega_m_val=0.02, rho_val=0.02, epsilon_val = 0.02, 
+                 zeta=0.02, c=0.02,
+                 s=0.02, phi=0.02,
+                 s_v=0.02, phi_v=0.02, disp=0.02, d=0.02)
+) }-> mf3
+
+# evaluate the log likelihood here
+foreach(start = iter(mf3), .combine=rbind) %dopar% {replicate(5, 
+      start %>% pfilter() %>% logLik()
+    ) %>%
+      logmeanexp(se=TRUE) -> ll} -> ll_list
+
+    
+mf3_coef <- rbind(
+  coef(mf3[[1]]), coef(mf3[[2]]), coef(mf3[[3]]), coef(mf3[[4]]), coef(mf3[[5]])
+  )
+                  
+data.frame(mf3_coef,loglik=ll_list[,1],loglik.se=ll_list[,2]) -> estimates3
+    
+estimates3  %>%
+select(loglik, loglik.se, R0, omega_m_val, rho_val, epsilon_val,  zeta, c,
+      s, phi,s_v, phi_v, disp, d) %>%
+arrange(-loglik)
+```
+
+``` {r}
+mf3 %>%
+  traces() %>%
+  melt() %>%
+  filter( variable %in% c("loglik","R0", "gamma_val", "omega_m_val", "zeta", "c",
+                 "s", "phi", "disp", "d")) -> filtered_plots
+  
+ggplot(filtered_plots)+
+aes(x=iteration,y=value,group=L1,color=factor(L1))+
+geom_line()+
+guides(color=FALSE)+
+facet_wrap(~variable,scales="free_y")
+
+
+```
+
+  Here we can see that d went up to a completely unreasonable value, so in the future I will be fixing it or adding a smaller perturbation to it, here I'm trying 0.002
+  
+```{r}
+
+foreach(i = 1:7, .combine=c, .packages = "pomp") %dopar%
+{mif2( pomp_object, params = model_4_params, Nmif=40, Np=2000, 
+     cooling.fraction.50=0.5,cooling.type="geometric",
+     rw.sd=rw.sd(R0=0.02, omega_m_val=0.02, rho_val=0.02, epsilon_val = 0.02, 
+                 zeta=0.02, c=0.02,
+                 s=0.02, phi=0.02,
+                 s_v=0.02, phi_v=0.02, disp=0.02, d=0.002)
+) }-> mf4
+
+# evaluate the log likelihood here
+foreach(start = iter(mf4), .combine=rbind) %dopar% {replicate(5, 
+      start %>% pfilter() %>% logLik()
+    ) %>%
+      logmeanexp(se=TRUE) -> ll} -> ll_list
+
+    
+mf4_coef <- rbind(
+  coef(mf4[[1]]), coef(mf4[[2]]), coef(mf4[[3]]), coef(mf4[[4]]), coef(mf4[[5]]),
+  coef(mf4[[6]]), coef(mf4[[7]])
+  )
+                  
+data.frame(mf4_coef,loglik=ll_list[,1],loglik.se=ll_list[,2]) -> estimates4
+    
+estimates4  %>%
+select(loglik, loglik.se, R0, omega_m_val, rho_val, epsilon_val,  zeta, c,
+      s, phi,s_v, phi_v, disp, d) %>%
+arrange(-loglik)
+
+mf4 %>%
+  traces() %>%
+  melt() %>%
+  filter( variable %in% c("loglik","R0", "gamma_val", "omega_m_val", "zeta", "c",
+                 "s", "phi", "disp", "d")) -> filtered_plots
+  
+ggplot(filtered_plots)+
+aes(x=iteration,y=value,group=L1,color=factor(L1))+
+geom_line()+
+guides(color=FALSE)+
+facet_wrap(~variable,scales="free_y")
+
+
+```  
+   
+```{r improved params}
+model_4_improved_params <- c(
+  
+  # base dynamics params
+  model_type = 3, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
+
+  R0 =  4.72,
+  gamma_val = 0, # recovery rate I -> R
+  omega_val = 0, # immune waning rate R -> S
+  omega_m_val = 0.53, # maternal antibody waning rate
+  kappa_val = 5000, # carrying capacity for Clunes
+  rho_val = 95.23, # I -> L
+  epsilon_val = 3.26, # L -> I
+
+
+  mu_val = 1.37, # juvenile maturation rate
+  mj_val = 0.50, # juvenile death rate
+  m_val = 0.23, # adult death rate
+  delta_t = 365, # scaling time as days instead of years
+
+  # seasonality params
+  c = 29.72, # birth pulse scaling factor
+  s = 102.52, # birth pulse synchronicity
+  phi = 8.14, # birth pulse time shift
+
+  c_v = 1, # seasonal drive scaling factor
+  s_v = 2.099, # seasonal drive synchronicity
+  phi_v = 0.1454, # sesonal drive time shift
+
+  # measuring process params
+  zeta = 0.89, # test accuracy
+  disp = 15.48, # dispersion parameter
+  d = 12.96 # number of bats contributing to the same pool
+
+)
+```
+  We set the parameters as this version and recalculate the model.
+  Here we are not recalculating the initial equilibria state, just working with the previous one we fitted with.
+  
+```{r new params}
+
+
+sim <- simulate(pomp_object,params=model_4_improved_params,format = "data.frame", nsim = 100)
+x <- trajectory(pomp_object,params=model_4_improved_params,format="d")
+
+
+colnames(pos_dat) <-c("time", "true_pos")
+sim_plus_data <- merge(sim, pos_dat, by.sim = "time")
+sim_plus_data <- merge(sim_plus_data, samplesize_dat, by.sim_plus_data = "time")
+sim_plus_data %>% mutate(true_test_prev = true_pos/samplesize, sim_test_prev = pos/samplesize,
+                         sim_model_prev = (In + Ij + Im + If)/
+                           (Sn + Sj + Sm + Sf + En + Ej + 
+                              Em + Ef + In + Ij + Im + If +
+                              Rn + Rj + Rm + Rf + Ma)
+) -> sim_plus_data
+
+source("plots.R")
+plots <- plots(sim_plus_data, x, sim)
+names(plots) <- c(   "plIm", "plRm", "plSm", 
+                     "plIj", "plRj", "plSj", 
+                     "plIn", "plRn", "plSn",
+                     "plMa")
+
+
+# plotting prevalence from tests and actual from the model
+
+ggplot(NULL)+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_model_prev, group= factor(.id), colour = "Simulated model prevalence"
+  ))+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = true_test_prev, group= factor(.id), colour = "2019 Clunes underroost prevalence"
+  ))+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_test_prev, group= factor(.id), colour = "Simulated underroost prevalence"
+  ))->plprev
+
+ggarrange(plotlist = plots, ncol = 3)
+plot(plprev)
+
+
+```

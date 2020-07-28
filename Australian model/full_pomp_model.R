@@ -4,7 +4,7 @@ library(ggplot2)
 library(pomp)
 
 source("load_data.R")
-data <-load_data(site = "CLU", year = "2019")
+data <-load_data("CLU", "all")
 samplesize_dat <- data[[1]]
 pos_dat <- data[[2]]
 
@@ -33,19 +33,20 @@ param_names <- params()
 
 
 source("aarons_params.R")
-init_states <- model_5_after_equ_ini
-params <- model_5_params
+init_states <- model_4_after_equ_ini
+params <- model_4_params
 
 
 # creating the POMP object
 pomp_object <- pomp(data=pos_dat,
-                    times="time",t0=735,
+                    times="time",t0=198,
                     rprocess=discrete_time(step.fun=stochStep,delta.t=1),
                     rinit=init_states,
                     skeleton=map(det_model_skeleton, delta.t = 1),
                     statenames=state_names,
                     paramnames=param_names,
-                    partrans=parameter_trans(log=c("R0","c","s", "phi", "disp", "d", "gamma_val", "omega_m_val"),
+                    partrans=parameter_trans(log=c("R0","c","s", "phi", "disp", "d", "gamma_val", "omega_m_val", "s_v",
+                                                   "phi_v", "rho_val", "epsilon_val"),
                                              logit = c("zeta")),
                     rmeasure=rmeas,
                     dmeasure=dmeas,
@@ -55,13 +56,14 @@ pomp_object <- pomp(data=pos_dat,
 # pop_equ_pomp_model <- pomp(data=data.frame("time" = seq(1, 365*50)),
 #                               times="time",t0=0,
 #                               rprocess=discrete_time(step.fun=stochStep,delta.t=1),
-#                               rinit=model_5_before_equ_ini,
+#                               rinit=model_4_before_equ_ini,
 #                               skeleton=map(det_model_skeleton, delta.t = 1),
 #                               statenames=state_names,
 #                               paramnames=param_names
 #  )
 # 
-#  pop_equ <- trajectory(pop_equ_pomp_model, params=model_5_params,format="d")
+#  pop_equ <- trajectory(pop_equ_pomp_model, params=model_4_params,format="d")
+#tail(pop_equ, 1)
 
 
 # simulating and calculating deterministic trajectory
@@ -83,9 +85,9 @@ sim_plus_data %>% mutate(true_test_prev = true_pos/samplesize, sim_test_prev = p
 
 source("plots.R")
 plots <- plots(sim_plus_data, x, sim)
-names(plots) <- c(   "plIm", "plRm", "plSm", 
-                     "plIj", "plRj", "plSj", 
-                     "plIn", "plRn", "plSn",
+names(plots) <- c(   "plIm", "plRm", "plEm", "plSm", 
+                     "plIj", "plRj", "plEj", "plSj", 
+                     "plIn", "plRn", "plEn", "plSn",
                      "plMa")
 
 
@@ -94,7 +96,7 @@ names(plots) <- c(   "plIm", "plRm", "plSm",
 ggplot(NULL)+
   geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_model_prev, group= factor(.id), colour = "Simulated model prevalence"
   ))+
-  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = true_test_prev, group= factor(.id), colour = "2019 Clunes underroost prevalence"
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = true_test_prev, group= factor(.id), colour = "Clunes underroost prevalence"
   ))+
   geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_test_prev, group= factor(.id), colour = "Simulated underroost prevalence"
   ))->plprev

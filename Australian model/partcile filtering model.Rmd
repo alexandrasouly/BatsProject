@@ -81,8 +81,8 @@ mean(estimates$gamma_val)
 mean(estimates$omega_m_val)
 ```
   Here we can see that R0 is around 11 in all the trajectories, gamma is certainly more than our starting value, and is around 9.33 on average, and also omega_m is higher, around 4.9 on average. The other values don't seem to be converging. 
-  Now, to use the best  new estimates for parameters as the starting values, I will need to calculate the new starting population equilibrium state with these parameters, and fit again to that to see if the likelihood actually improved when starting from the right state. 
-```{r improved params}
+
+```{r use new params}
 model_5_improved_params <- c(
   
   # base dynamics params
@@ -116,7 +116,15 @@ model_5_improved_params <- c(
   disp = 1004, # dispersion parameter
   d = 8 # number of bats contributing to the same pool
   
+
+  
 )
+```
+
+
+  Now, to use the best  new estimates for parameters as the starting values, I will need to calculate the new starting population equilibrium state with these parameters, and fit again to that to see if the likelihood actually improved when starting from the right state. 
+```{r improved params}
+
 
 pop_equ_pomp_model <- pomp(data=data.frame("time" = seq(1, 365*50)),
                               times="time",t0=0,

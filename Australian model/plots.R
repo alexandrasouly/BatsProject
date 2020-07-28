@@ -21,6 +21,12 @@ plots <- function(sim_plus_data, x, sim){
     theme(legend.position = "none") ->plRm
   
   ggplot(data=x,mapping=aes(x=time))+
+    geom_line(aes(x=time, y=Em))+
+    geom_line(data=sim, alpha = 0.1,aes(x=time, y = Em, group= factor(.id),
+                                        colour = "Stochastic infected"))+
+    theme(legend.position = "none") ->plEm
+  
+  ggplot(data=x,mapping=aes(x=time))+
     geom_line(aes(x=time, y=Ij))+
     geom_line(data=sim, alpha = 0.1,aes(x=time, y = Ij, group= factor(.id),
                                         colour = "Stochastic infected"))+
@@ -37,6 +43,12 @@ plots <- function(sim_plus_data, x, sim){
     geom_line(data=sim, alpha = 0.1,aes(x=time, y = Rj, group= factor(.id),
                                         colour = "Stochastic infected"))+
     theme(legend.position = "none") ->plRj
+  
+  ggplot(data=x,mapping=aes(x=time))+
+    geom_line(aes(x=time, y=Ej))+
+    geom_line(data=sim, alpha = 0.1,aes(x=time, y = Ej, group= factor(.id),
+                                        colour = "Stochastic infected"))+
+    theme(legend.position = "none") ->plEj
   
   ggplot(data=x,mapping=aes(x=time))+
     geom_line(aes(x=time, y=In))+
@@ -57,14 +69,20 @@ plots <- function(sim_plus_data, x, sim){
     theme(legend.position = "none") ->plRn
   
   ggplot(data=x,mapping=aes(x=time))+
+    geom_line(aes(x=time, y=En))+
+    geom_line(data=sim, alpha = 0.1,aes(x=time, y = En, group= factor(.id),
+                                        colour = "Stochastic infected"))+
+    theme(legend.position = "none") ->plEn
+  
+  ggplot(data=x,mapping=aes(x=time))+
     geom_line(aes(x=time, y=Ma))+
     geom_line(data=sim, alpha = 0.1,aes(x=time, y = Ma, group= factor(.id),
                                         colour = "Stochastic infected"))+
     theme(legend.position = "none") ->plMa
   
-  plots <- list(plIm, plRm, plSm, 
-                plIj, plRj, plSj, 
-                plIn, plRn, plSn,
+  plots <- list(plIm, plRm, plEm, plSm, 
+                plIj, plRj, plEj, plSj, 
+                plIn, plRn, plEn, plSn,
                 plMa)
   return(plots)
 }

@@ -4,7 +4,7 @@ library(dplyr)
 library(ggplot2)
 library(pomp)
 
-source("load_data.R")
+source("load_data.R", local = TRUE)
 data <-load_data("CLU", "all")
 samplesize_dat <- data[[1]]
 pos_dat <- data[[2]]
@@ -16,26 +16,26 @@ covar_samplesize <-covariate_table(samplesize_dat,
                                    order = "constant", 
                                    times= "time")
 # stochastic step model
-source("stoch_step.R")
+source("stoch_step.R", local = TRUE)
 stochStep <-stochStep()
 
 # deterministic skeleton
-source("det_model_skeleton.R")
+source("det_model_skeleton.R", local = TRUE)
 det_model_skeleton <- det_model_skeleton()
 
 # measure processes, dmeas is likelihood, rmeas is to simulate
-source("measure_processes.R")
+source("measure_processes.R", local = TRUE)
 measure_processes <-measure_processes()
 dmeas <- measure_processes[[1]]
 rmeas <- measure_processes[[2]]
 
 # initial state values and names of params and states
-source("ini_and_params.R")
+source("ini_and_params.R", local = TRUE)
 state_names <- states()
 param_names <- params()
 
 
-source("aarons_params.R")
+source("aarons_params.R", local = TRUE)
 init_states <- model_4_before_equ_ini
 params <- model_4_params
 

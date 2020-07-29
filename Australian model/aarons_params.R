@@ -3,111 +3,110 @@
 
 
 #---------------------------------- MODEL 5 -------------------------------------------
-#                      model 5 is SIR with no seasonal forcing 
-
+#                      model 5 is SIR with no seasonal forcing
 # posterior parameters from Aaron's draft
-# model_5_params <- c(
-#   
-#   # base dynamics params
-#   model_type = 1, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only 
-#   
-#   R0 =  42.152,
-#   gamma_val = 3.135, # recovery rate I -> R
-#   omega_val = 0, # immune waning rate R -> S
-#   omega_m_val = 0.8, # maternal antibody waning rate
-#   kappa_val = 5000, # carrying capacity for Clunes
-#   rho_val = 0, # I -> L 
-#   epsilon_val = 0, # L -> I
-#   
-# 
-#   mu_val = 1.37, # juvenile maturation rate
-#   mj_val = 0.50, # juvenile death rate
-#   m_val = 0.23, # adult death rate
-#   delta_t = 365, # scaling time as days instead of years
-#   
-#   # seasonality params
-#   c = 18.65, # birth pulse scaling factor
-#   s = 130, # birth pulse synchronicity
-#   phi = 7.19, # birth pulse time shift
-#   
-#   c_v = 1, # seasonal drive scaling factor
-#   s_v = 0, # seasonal drive synchronicity
-#   phi_v = 0, # sesonal drive time shift
-#   
-#   # measuring process params
-#   zeta = 0.3, # test accuracy
-#   disp = 1000, # dispersion parameter
-#   d = 10 # number of bats contributing to the same pool
-#   
-# )
+model_5_params <- c(
+
+  # base dynamics params
+  model_type = 1, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
+
+  R0 =  42.152,
+  gamma_val = 3.135, # recovery rate I -> R
+  omega_val = 0, # immune waning rate R -> S
+  omega_m_val = 0.8, # maternal antibody waning rate
+  kappa_val = 5000, # carrying capacity for Clunes
+  rho_val = 0, # I -> L
+  epsilon_val = 0, # L -> I
+
+
+  mu_val = 1.37, # juvenile maturation rate
+  mj_val = 0.50, # juvenile death rate
+  m_val = 0.23, # adult death rate
+  delta_t = 365, # scaling time as days instead of years
+
+  # seasonality params
+  c = 18.65, # birth pulse scaling factor
+  s = 130, # birth pulse synchronicity
+  phi = 7.19, # birth pulse time shift
+
+  c_v = 1, # seasonal drive scaling factor
+  s_v = 0, # seasonal drive synchronicity
+  phi_v = 0, # sesonal drive time shift
+
+  # measuring process params
+  zeta = 0.3, # test accuracy
+  disp = 1000, # dispersion parameter
+  d = 10 # number of bats contributing to the same pool
+
+)
 
 # #Aaron's 95% confidence interval lower bounds
 # model_5_lower <- c(
-#   model_type = 1, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only 
-#   
+#   model_type = 1, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
+#
 #   R0 = , # infection rate S -> R
 #   gamma_val = 2.094, # recovery rate I -> R
 #   omega_val = 0, # immune waning rate R -> S
 #   omega_m_val = 0.749, # maternal antibody waning rate
 #   kappa_val = 5000, # carrying capacity
-#   rho_val = 0, # I -> L 
+#   rho_val = 0, # I -> L
 #   epsilon_val = 0, # L -> I
-#   
-#   
+#
+#
 #   mu_val = 1.37, # juvenile maturation rate
 #   mj_val = 0.50, # juvenile death rate
 #   m_val = 0.23, # adult death rate
 #   delta_t = 365, # scaling time as days instead of years
-#   
+#
 #   # seasonality params
 #   c = 13.68, # birth pulse scaling factor
 #   s = 112.701, # birth pulse synchronicity
 #   phi = 7.17, # birth pulse time shift
-#   
+#
 #   c_v = 1, # seasonal drive scaling factor
 #   s_v = 0, # seasonal drive synchronicity
 #   phi_v = 0, # sesonal drive time shift
-#   
+#
 #   # measuring process params
 #   zeta = 0.261, # test accuracy
 #   disp = 1000, # dispersion parameter
 #   d = 4 # number of bats contributing to the same pool
-#   
+#
 # )
-# 
-# 
+#
+#
 # model_5_upper <- c(
-#   model_type = 1, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only 
-#   
+#   model_type = 1, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
+#
 #   R0 = , # infection rate S -> R
 #   gamma_val = 4.036, # recovery rate I -> R
 #   omega_val = 0, # immune waning rate R -> S
 #   omega_m_val = 0.859, # maternal antibody waning rate
 #   kappa_val = 5000, # carrying capacity
-#   rho_val = 0, # I -> L 
+#   rho_val = 0, # I -> L
 #   epsilon_val = 0, # L -> I
-#   
-#   
+#
+#
 #   mu_val = 1.37, # juvenile maturation rate
 #   mj_val = 0.50, # juvenile death rate
 #   m_val = 0.23, # adult death rate
 #   delta_t = 365, # scaling time as days instead of years
-#   
+#
 #   # seasonality params
 #   c = 21.359, # birth pulse scaling factor
 #   s = 151.075, # birth pulse synchronicity
 #   phi = 7.2, # birth pulse time shift
-#   
+#
 #   c_v = 1, # seasonal drive scaling factor
 #   s_v = 0, # seasonal drive synchronicity
 #   phi_v = 0, # sesonal drive time shift
-#   
+#
 #   # measuring process params
 #   zeta = 0.819, # test accuracy
 #   disp = 1000, # dispersion parameter
 #   d = 19 # number of bats contributing to the same pool
-#   
-#   
+#
+#
 # )
 
 

@@ -315,31 +315,68 @@ model_5_params <- c(
                         Rf = 0;
 
                         ")
-
- # 50 years waiting for equilibria
- model_4_after_equ_ini <- Csnippet("
-
-                        Ma = 1054;
-                        Sn = 295;
-                        Sj = 380;
-                        Sm = 400;
-                        Sf = 400;
-
-                        En = 51;
-                        Ej = 91;
-                        Em = 1266;
-                        Ef = 1266;
-
-                        In = 1;
-                        Ij = 2;
-                        Im = 14;
-                        If = 14;
-
-                        Rn = 0;
-                        Rj = 0;
-                        Rm = 0;
-                        Rf = 0;
-
-                        ")
-
- #   
+ model_4_params_lower <- c(
+    
+    # base dynamics params
+    model_type = 3, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
+    
+    R0 = 3.393, # infection rate S -> R
+    gamma_val = 0, # recovery rate I -> R
+    omega_val = 0, # immune waning rate R -> S
+    omega_m_val = 0.799, # maternal antibody waning rate
+    kappa_val = 5000, # carrying capacity
+    rho_val = 19.409, # I -> L
+    epsilon_val = 0.2, # L -> I
+    mu_val = 1.37, # juvenile maturation rate
+    mj_val = 0.5, # juvenile death rate
+    m_val = 0.187, # adult death rate
+    delta_t = 365, # scaling time as days instead of years
+    
+    # seasonality params
+    c = 12.405, # birth pulse scaling factor
+    s = 110.155, # birth pulse synchronicity
+    phi = 7.16, # birth pulse time shift
+    
+    c_v = 1, # seasonal drive scaling factor
+    s_v = 0.906, # seasonal drive synchronicity
+    phi_v = 0, # sesonal drive time shift
+    
+    # measuring process params
+    zeta = 0.278, # test accuracy
+    disp = 10, # dispersion parameter
+    d = 2 # number of bats contributing to the same pool
+    
+ )
+ 
+ model_4_params_upper <- c(
+    
+    # base dynamics params
+    model_type = 3, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
+    
+    R0 = 18.199, # infection rate S -> R
+    gamma_val = 0, # recovery rate I -> R
+    omega_val = 0, # immune waning rate R -> S
+    omega_m_val = 0.799, # maternal antibody waning rate
+    kappa_val = 5000, # carrying capacity
+    rho_val = 306.196, # I -> L
+    epsilon_val = 25.351, # L -> I
+    mu_val = 1.37, # juvenile maturation rate
+    mj_val = 0.5, # juvenile death rate
+    m_val = 0.187, # adult death rate
+    delta_t = 365, # scaling time as days instead of years
+    
+    # seasonality params
+    c = 19.664, # birth pulse scaling factor
+    s = 148.909, # birth pulse synchronicity
+    phi = 7.2, # birth pulse time shift
+    
+    c_v = 1, # seasonal drive scaling factor
+    s_v = 2.655, # seasonal drive synchronicity
+    phi_v = 0, # sesonal drive time shift
+    
+    # measuring process params
+    zeta = 0.999, # test accuracy
+    disp = 1000, # dispersion parameter
+    d = 20 # number of bats contributing to the same pool
+    
+ )

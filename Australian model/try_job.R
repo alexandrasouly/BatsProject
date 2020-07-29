@@ -12,23 +12,25 @@ library(doRNG)
 registerDoRNG(625904618)
 library(pomp)
 
+sobolDesign(
+  lower=model_4_params_lower,
+  upper=model_4_params_upper,
+  nseq=20
+) -> guesses
 
-
-Nmif = 10 
-Np = 30
-params = model_4_params
-
+Nmif = 30 
+Np = 2000
 # filtering---
   run_time <- system.time({
-        mf3<- foreach(i = 1:2,
+        mf3<- foreach(guess=iter(guesses,"row"),
                   .combine=c, 
                   .packages = "pomp"
+                  
         ) %dopar%
         {
-          cat(i)
           mif2( 
             pomp_object,
-            params = params,
+            params = guess,
             Nmif = Nmif, 
             Np = Np, 
             cooling.fraction.50=0.5,
@@ -39,5 +41,15 @@ params = model_4_params
         }
   })
   
-  save(Nmif, Np, run_time, params,  file = "trying_to_save_data.rda")
+  save(Nmif, Np, run_time, guesses,  file = "Sili_filtering_proper.rda")
+  
+  mf3 %>%
+    traces() %>%
+    melt() %>%
+    filter(variable %in% c("loglik", "R0", "rho_val", "epsilon_val",  "zeta", "c",
+           "s", "phi","s_v", "phi_v", "disp", "d") )%>%
+    ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+    geom_line()+
+    facet_wrap(~variable,scales="free_y")+
+    guides(color=FALSE)
 

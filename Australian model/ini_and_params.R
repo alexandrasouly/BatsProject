@@ -1,30 +1,4 @@
-inits<- function(){
-  init_states <- Csnippet("
-                        
-                        Ma = 501;
-                        Sn = 3;
-                        Sj = 70;
-                        Sm = 3;
-                        Sf = 3;
-                        
-                        En = 0;
-                        Ej = 0;
-                        Em = 0;
-                        Ef = 0;
-                        
-                        In = 3;
-                        Ij = 60;
-                        Im = 7;
-                        If = 7;
-                        
-                        Rn = 4;
-                        Rj = 255;
-                        Rm = 479;
-                        Rf = 479;
-                        
-                        ")
-  return(init_states)
-}
+
 
 states <- function(){
 
@@ -38,8 +12,8 @@ states <- function(){
 }
 
 params <- function(){
-  param_names <- c( "beta_val", "gamma_val", "omega_val", "omega_m_val", "kappa_val", "rho_val", 
-                "epsilon_val", "mu_val", "mj_val", "m_val",  "delta_t",  "c", "s", "phi",
+  param_names <- c("model_type", "R0", "gamma_val", "omega_val", "omega_m_val", "kappa_val", "rho_val", 
+                "epsilon_val", "mu_val", "mj_val", "m_val",  "delta_t",  "c", "s", "phi", "c_v", "s_v", "phi_v",
                 "zeta", "disp", "d")
   return(param_names)
 }

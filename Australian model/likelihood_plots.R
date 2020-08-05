@@ -1,10 +1,10 @@
 pdf("model4_if_plots.pdf")
 #plotting the traces
 cat("Model 4 Iterated filtering on all Clunes data using 50 iter, 2000 particles")
-mf3iter2 %>%
+mf3iter2%>%
   traces() %>%
   melt() %>%
-  filter(variable %in% c("loglik", "R0", "rho_val", "epsilon_val",  "zeta", "c",
+  filter(variable %in% c("loglik", "R0", "gamma_val",  "zeta", "c",
                          "s", "phi","s_v", "phi_v", "disp", "d") )%>%
   ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
   geom_line()+

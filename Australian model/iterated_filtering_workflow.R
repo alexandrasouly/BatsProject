@@ -1,5 +1,5 @@
 source("full_pomp_model.R", local = TRUE)
-
+source("aarons_params.R", local = TRUE)
 library(foreach)
 library(iterators)
 library(plyr)
@@ -12,15 +12,15 @@ library(doRNG)
 registerDoRNG(625904618)
 library(pomp)
 # ----------------------------------------- params of the filtering --------------------------------
-# sobolDesign(
-#   lower=box[1,],
-#   upper=box[2,],
-#   nseq=10) -> guesses
+sobolDesign(
+  lower= model_6_params_lower,
+  upper= model_6_params_upper,
+  nseq=24) -> guesses
 
-guesses <-  rbind(guesses, best_model_8, best_model_8, best_model_8, best_model_8, best_model_8)
+guesses <-  rbind(guesses, model_6_params, model_6_params, model_6_params, model_6_params, model_6_params)
 
 Nmif = 20
-Np = 4000
+Np = 2500
 # ------------------------------------------- filtering ---------------------------------------------
       mf3<- foreach(guess=iter(guesses,"row"),
                 .combine=c,
@@ -35,12 +35,12 @@ Np = 4000
           Np = Np,
           cooling.fraction.50=0.5,
           cooling.type="geometric",
-          rw.sd=rw.sd(R0=0.02, zeta=0.02, omega_val = 0.02, gamma_val = 0.02,
-                      c=0.02, s=0.02, phi=0.02, s_v=0.02, phi_v=0.02, disp=0.02, d=0.01)
+          rw.sd=rw.sd(R0=0.02, zeta=0.02, gamma_val = 0.02,
+                      c=0.02, s=0.02, s_v=0.02, phi_v=0.02, disp=0.02, d=0.01)
         )
       }
 
-      save(guesses, mf3,  file = "model8_filtering_top_pt1.rda")
+      save(guesses, mf3,  file = "model6_filtering_pt1.rda")
 # ------------------------------------------- filtering part2 ---------------------------------------------
       mf3iter2<- foreach(mf3item=iter(mf3),
                         .combine=c,
@@ -51,7 +51,7 @@ Np = 4000
                     continue(mf3item, Nmif = 30)
                     }
 
-      save(guesses, mf3iter2,  file = "model8_filtering_top_pt2.rda")
+      save(guesses, mf3iter2,  file = "model6_filtering_pt2.rda")
 
 # -------------- calculating the likelihoods properly ------------------------------------------------
       
@@ -70,7 +70,7 @@ Np = 4000
       # #staring a new csv file 
       lik_list %>%
       arrange(-loglik) %>%
-      write.csv("model8_likelihoods_top_again.csv")
+      write.csv("model6_likelihoods.csv")
       # 
       # 
       # # #adding in more points to my csv of likelihoods

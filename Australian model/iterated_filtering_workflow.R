@@ -13,11 +13,11 @@ registerDoRNG(625904618)
 library(pomp)
 # ----------------------------------------- params of the filtering --------------------------------
 sobolDesign(
-  lower= model_6_params_lower,
-  upper= model_6_params_upper,
+  lower= model_8_params_lower,
+  upper= model_8_params_upper,
   nseq=24) -> guesses
 
-guesses <-  rbind(guesses, model_6_params, model_6_params, model_6_params, model_6_params, model_6_params)
+guesses <-  rbind(guesses, model_8_params, model_8_params, model_8_params, model_8_params, model_8_params)
 
 Nmif = 20
 Np = 2500
@@ -35,12 +35,12 @@ Np = 2500
           Np = Np,
           cooling.fraction.50=0.5,
           cooling.type="geometric",
-          rw.sd=rw.sd(R0=0.02, zeta=0.02, gamma_val = 0.02,
+          rw.sd=rw.sd(R0=0.02, zeta=0.02, gamma_val = 0.02, omega_val = 0.02,
                       c=0.02, s=0.02, s_v=0.02, phi_v=0.02, disp=0.02, d=0.01)
         )
       }
 
-      save(guesses, mf3,  file = "model6_filtering_pt1.rda")
+      save(guesses, mf3,  file = "model8_filtering_pt1.rda")
 # ------------------------------------------- filtering part2 ---------------------------------------------
       mf3iter2<- foreach(mf3item=iter(mf3),
                         .combine=c,
@@ -51,7 +51,7 @@ Np = 2500
                     continue(mf3item, Nmif = 30)
                     }
 
-      save(guesses, mf3iter2,  file = "model6_filtering_pt2.rda")
+      save(guesses, mf3iter2,  file = "model8_filtering_pt2.rda")
 
 # -------------- calculating the likelihoods properly ------------------------------------------------
       
@@ -70,7 +70,7 @@ Np = 2500
       # #staring a new csv file 
       lik_list %>%
       arrange(-loglik) %>%
-      write.csv("model6_likelihoods.csv")
+      write.csv("model8_likelihoods.csv")
       # 
       # 
       # # #adding in more points to my csv of likelihoods

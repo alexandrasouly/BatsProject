@@ -24,7 +24,7 @@ In this notebook I examine Model 8, which is SIRS with a seasonal birth pulse an
   We are not fitting population dynamics parameters except for the birth pulse. The params we are not fitting are at Aarons posterior estimates, and kappa = 5000 as fro the Clunes site estimates of bats are aroud 4000-6000. For the other params, we start the fitting with intiial values given by 5 repeats of Aaron's posterior values and 25 point from a Sobol grid of his 95% CI"
 
 ```{r}
-pairs(~R0+gamma_val+omega_val+zeta+c+s+phi+s_v+phi_v+disp+d, data = first_guesses, pch = 20, main = "Model 4 fitting starting values")
+pairs(~R0+gamma_val+omega_val+zeta+c+s+phi+s_v+phi_v+disp+d, data = first_guesses, pch = 20, main = "Model 8 fitting starting values")
 ```
 
   
@@ -55,7 +55,7 @@ head(model8_likelihoods, 5) %>%
 Then, I took the best results, made a 10 point Sobol grid from the range of the 7 parameters, and also added the highest likelihood set of params 10 times to create a new initial starting set of 20 points. I tried what happens when I use 4000 particles instead of 2000 particles. 
 
 ```{r}
-pairs(~R0+gamma_val+omega_val+zeta+c+s+phi+s_v+phi_v+disp+d, data = guesses, pch = 20, main = "Model 4 fitting starting values")
+pairs(~R0+gamma_val+omega_val+zeta+c+s+phi+s_v+phi_v+disp+d, data = guesses, pch = 20, main = "Model 8 fitting starting values")
 ```
 
 ```{r}
@@ -139,3 +139,42 @@ for (i in 1:4){
   }
 ```
 While the fourth one matches the underroost prevalence slightly less than the previous four, it matches the ctahcing prevalence samples rather well!     
+### Fixing Phi ###
+  
+  We have now fixed phi, let's see if we have better convergence:
+```{r}
+mf3iter2 %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "omega_val", "gamma_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d") )%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+``` 
+
+We have much a much smaller range on phi_v, gamma, R0, c and s. Nothing changed about zeta and omega_val. I will have to explore if varying omega_val in this model has a lot of effect or not. Our overall estimates have a much better likelihoods, fixing phi definitely did help!
+  
+```{r}
+model8_likelihoods  %>% filter(phi == 7.179) -> model8_likelihoods_phi_fixed
+head(model8_likelihoods_phi_fixed, 5) %>%
+  select (c("loglik", "loglik.se", "R0", "gamma_val", "omega_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d"))
+```  
+ 
+  We can see that fixing phi at the value from literature still gives us the same best likelihoods.
+  
+```{r}
+gather(model8_likelihoods_phi_fixed, key, value, -loglik) %>%
+  filter(key %in% c( "R0", "gamma_val", "omega_val", "zeta", "c",
+                              "s", "phi","s_v", "phi_v", "disp", "d")) %>%
+ggplot(aes(value, loglik), main = "Results of model 8 IF phi fixed") + 
+   geom_point() +
+  facet_wrap(~ key , scales="free_x", ncol=4) -> pl4
+
+plot(pl4)
+```
+        Gamma seems to cluster at a different value than without phi fixed, instead of around 16 with loglik -70, -80, it went to 12, with a much higher likelihood -55, -65. This gives us a better estimate for the true value of gamma. Same for R0. We can actually see the clusters for gamma_val and phi_v over a relatively small range. 

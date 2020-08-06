@@ -411,7 +411,16 @@ stochStep <- function(){
   } else {
     Rf = Rf - n_Rf_out + n_Rj_Rf + n_If_Rf;
   }
-                        
+  
+  /* ------------------------------ accumvars new infected: ------------------------------------------------------ */
+  if (t == 0) {
+    H = 0;
+  } else {
+  H =  n_Sn_In + n_En_In 
+        + n_In_Ij + n_Sj_Ij + n_Ej_Ij 
+        + n_Ij_Im + n_Sm_Im + n_Em_Im 
+        + n_Ij_If + n_Sf_If + n_Ef_If;
+  }                      
   ")
   return(stochStep)
     

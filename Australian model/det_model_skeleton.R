@@ -166,7 +166,16 @@ det_model_skeleton <- function(){
                       } else {
                         DRf = Rf + mu * (Rj / 2) - (m * (N / kappa) + omega) * Rf + gamma * If;
                       }
-                          
+                      
+                      if (t == 0){
+                      DH = 0;
+                      } else {
+                      DH = 
+                                          betI * Sn + epsilon * En 
+                         + omega_m * In  + betI * Sj + epsilon * Ej
+                         + mu * (Ij / 2) + betI * Sm + epsilon * Em
+                         + mu * (Ij / 2) + betI * Sf + epsilon * Ef;
+                      }   
                           
                           ")
   return(det_model_skeleton)

@@ -57,6 +57,7 @@ pomp_object <- pomp(data=pos_dat,
                     rmeasure=rmeas,
                     dmeasure=dmeas,
                     covar=covar_samplesize,
+                    accumvars = "H",
                     cdir=".", cfile="hacking_win_bug"
 )
 
@@ -95,7 +96,7 @@ pomp_object <- pomp(data=pos_dat,
 # names(plots) <- c(   "plIm", "plRm", "plEm", "plSm", 
 #                      "plIj", "plRj", "plEj", "plSj", 
 #                      "plIn", "plRn", "plEn", "plSn",
-#                      "plMa")
+#                      "plMa", "plH")
 # 
 # 
 # # plotting prevalence from tests and actual from the model

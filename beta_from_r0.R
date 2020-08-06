@@ -16,3 +16,6 @@ pop_size <-ini_pop_size( model_4_params[["m_val"]], model_4_params[["mj_val"]] ,
                          model_4_params[["mu_val"]], model_4_params[["kappa_val"]], model_4_params[["omega_m_val"]])
 pop_size
 
+pop_size <-ini_pop_size( 0.187, 0.5 ,
+                         1.37, 5000, 0.799)
+pop_size

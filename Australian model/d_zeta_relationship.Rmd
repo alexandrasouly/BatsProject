@@ -1,0 +1,95 @@
+---
+title: "D-Zeta relationship"
+output: html_notebook
+---
+Following this plot, where we can see that d and zeta appear to be correlated, we examine the relation between d (number of bats contributing to sheet) and zeta (proportion of infected bats contributing positively to underroost sample) in model 8. 
+```{r}
+library(foreach)
+library(iterators)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(doParallel)
+registerDoParallel(cores= 4)
+library(doRNG)
+registerDoRNG(625904618)
+library(pomp)
+
+  all <- ldply(list(result=subset(model8_likelihoods,loglik>max(loglik)-20)))
+plot(d~zeta, col = "red", data=all,pch=20,main ="Model 8 high likelihood areas" )
+``` 
+  We create a list with guesses all over the zeta - d grid and combine these wth the top 5 estimates to see how other regions do. We need to do the filtering in another function, as this markdown file is not suitable for that.
+```{r}
+lower <- c(zeta = 0.2, d = 1)
+upper <- c(zeta = 1, d = 20)
+
+zeta_d_guesses1 <- sobolDesign(lower =lower, upper = upper, nseq = 50)
+zeta_d_guesses2 <- sobolDesign(lower =lower, upper = upper, nseq = 100)
+plot(rbind(zeta_d_guesses1, zeta_d_guesses2))
+rbind(zeta_d_guesses1, zeta_d_guesses2) -> zeta_d_guesses
+head(model8_likelihoods, 5) %>%
+  select(-zeta, -d, -loglik, - loglik.se) -> other_params_guesses
+
+guesses <- vector(mode = "list", length = 5) #initialize empty list
+for(i in 1:5)
+{merge(zeta_d_guesses, other_params_guesses[i,]) -> guesses[[i]]}
+```
+ Here we plot 150 points of varying zeta and d, while we kept all the other params fix, at the best estimate of model 8, which is at the time of writing
+ 
+```{r}
+best_guess %>% select(-zeta, -d)
+```
+
+
+```{r}
+
+model8_likelihoods %>% filter(disp== disp[[1]]) %>% select(zeta,d, loglik)  -> zeta_d_table
+rbPal <- colorRampPalette(c('black','yellow'))
+Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
+
+plot(zeta_d_table$zeta,zeta_d_table$d,pch = 20,col = Col) 
+ legend(
+        "topright",
+        inset=c(-0,0),
+        title="loglik",
+        legend=levels(cut(zeta_d_table$loglik,breaks = 10)),
+        col =rbPal(10),
+        pch=20,
+        cex = 0.8,
+        par(xpd=TRUE))
+
+levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
+          panel = panel.levelplot.points, cex = 1.2
+    ) + 
+    layer_(panel.2dsmoother(..., n = 200))
+
+
+ 
+ 
+ model8_likelihoods %>% filter( disp== disp[[1]], loglik>max(loglik)-100) %>% select(zeta,d, loglik)  -> zeta_d_table
+rbPal <- colorRampPalette(c('black','yellow'))
+Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
+
+levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
+          panel = panel.levelplot.points, cex = 1.2
+    ) + 
+    layer_(panel.2dsmoother(..., n = 100))
+ 
+  model8_likelihoods %>% filter( disp== disp[[1]], loglik>max(loglik)-50) %>% select(zeta,d, loglik)  -> zeta_d_table
+rbPal <- colorRampPalette(c('black','yellow'))
+Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
+
+levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
+          panel = panel.levelplot.points, cex = 1.2, contour = TRUE,
+          xlim =  c(0.2,0.9))+ 
+    layer_(panel.2dsmoother(..., n = 100))
+      
+```
+  We can beautifully see how zeta and d correlate when nothing else changes. With applying a smoother, we see the different layers in the likelihood surface. The large deep blue layer on the last plot is what we need to maximalise the likelihood. This means we will only need to fit one of zeta and d if this surface is the same for other parameter choices.
+  
+  Now we need to try and see if this works the same with any other fixed params, or if we just found something special true only for one set of fixed other params. (I really hope this is universal!) If it is true, we will need to find the function that describes that layer, generate more points on and around it to narrow the region down, and we're set, one fewer params to fit!
+  Then we can think about exploring if this is true for the other models as well.
+    
+   Now let us try and fix the second best set of other params we got so far.
+

@@ -1,0 +1,92 @@
+---
+title: "Model 4 filtering results"
+output: html_notebook
+fig_width: 12
+---
+
+```{r}
+library(foreach)
+library(iterators)
+library(plyr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(doParallel)
+registerDoParallel(cores= 6)
+library(doRNG)
+registerDoRNG(625904618)
+library(pomp)
+```
+
+In this notebook I examine Model 4, which is SILI with maternal immunity given by both recovered and latent states. There is a seasonal birth pulse and we fit a seasonal drive for L -> I transitions.  
+
+  We are not fitting population dynamics parameters except for the birth pulse. The params we are not fitting are at Aarons posterior estimates, and kappa = 5000 as fro the Clunes site estimates of bats are aroud 4000-6000. For the other paams, we start the fitting with intiial values given by 5 repeats of Aaron's posterior values and 25 point from a Sobol grid of his 95% CI"
+
+```{r}
+pairs(~R0+rho_val+epsilon_val+zeta+c+s+phi+s_v+phi_v+disp+d, data = guesses, pch = 20, main = "Model 4 fitting starting values")
+```
+
+  
+    Using 2000 particels and 50 iterations with iterated filtering, we got the following results for iterated filtering:
+```{r}
+mf3iter2 %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "rho_val", "epsilon_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d") )%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+```
+  Here we see that the loglikelihood went up quickly after the first few iterations, and then stayed at around the same level. R0, rho, epsilon, phi_v (the seasonal drive shift), zeta (underroost test sensitiviy) and d (number of bats over sheet) staying in a wide range (more or less Aaron's 95% CI we started with), and did not converge much. The birth params c,s,phi diverged from our initial intervals completely. The two params that converged for almost all initial guesses are s_v (this affect how sharp the seasonal drive peak is) and disp (which is the dispersion parameter in our likelihood function, the smaller it is the more variance the sampling has).
+  The top values are the following, the best 4 have loglik around -56. We can indeed see that we have a large range for the end parameters.
+```{r}
+head(model4_likelihoods, 5) %>%
+  select (c("loglik", "R0", "rho_val", "epsilon_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d"))
+```
+  Now we can visualise differently where our parameters converged to. The grey points are the starting values (same as on the first plot), and the red point are the results of the filtering.
+```{r}
+  all <- ldply(list(guess=guesses,result=subset(model4_likelihoods,loglik>max(loglik)-20)))
+pairs(~R0+rho_val+epsilon_val+zeta+
+        c+s+phi+s_v+phi_v+disp+d,data=all,col=ifelse(all$.id=="guess",grey(0.5),"red"),pch=20,main ="Model 4 high likelihood areas" )
+```
+
+  On this plot, we look independently at the likelihoods of the resulting parameter values:
+```{r}
+gather(model4_likelihoods, key, value, -loglik) %>%
+  filter(key %in% c( "R0", "rho_val", "epsilon_val",  "zeta", "c",
+                              "s", "phi","s_v", "phi_v", "disp", "d")) %>%
+ggplot(aes(value, loglik), main = "Results of model 4 IF") + 
+   geom_point() +
+  facet_wrap(~ key , scales="free_x", ncol=4) -> pl4
+
+plot(pl4)
+``` 
+  
+    Now we take the best four results and simulate with them, to see what we got:
+```{r}
+source("./../../pomp_model_fn.R")
+source("./../../aarons_params.R")
+
+head(model4_likelihoods, 4) %>%
+  select( -c("loglik","loglik.se")) -> best_params
+apply(best_params, 1, function(x)
+  pomp_model_fn(site="CLU", year="all", 
+                init_states= model_4_before_equ_ini,
+                input_params = x)) -> best_params_plots
+
+for (i in 1:4){
+    best_params_plots[[i]] +
+     geom_point( aes(x = clu_catching$min_date, y = clu_catching$hen_prevalence))+
+      geom_errorbar(aes(x = clu_catching$min_date,
+                        ymin = clu_catching$hen_lower, 
+                        ymax = clu_catching$hen_upper)) -> plt
+    plot(plt)
+  }
+```
+We can see that none of them could really get the different sized peaks, but all got the peak locations. We will need inter-year params differing to be able to match those.     

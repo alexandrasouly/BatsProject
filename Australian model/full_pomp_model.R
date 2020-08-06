@@ -1,7 +1,10 @@
+#cureently set to model 8
+
 # loading observed data
 setwd("~/BatsProject/Australian model")
 library(dplyr)
 library(ggplot2)
+library(ggpubr)
 library(pomp)
 
 source("load_data.R", local = TRUE)
@@ -36,8 +39,8 @@ param_names <- params()
 
 
 source("aarons_params.R", local = TRUE)
-init_states <- model_4_before_equ_ini
-params <- model_4_params
+init_states <- model_8_before_equ_ini
+params <- model_8_params
 
 
 
@@ -54,7 +57,8 @@ pomp_object <- pomp(data=pos_dat,
                                              logit = c("zeta")),
                     rmeasure=rmeas,
                     dmeasure=dmeas,
-                    covar=covar_samplesize
+                    covar=covar_samplesize,
+                    cdir=".", cfile="hacking_win_bug"
 )
 
 # pop_equ_pomp_model <- pomp(data=data.frame("time" = seq(1, 365*50)),
@@ -71,8 +75,8 @@ pomp_object <- pomp(data=pos_dat,
 # plot()
 
 # simulating and calculating deterministic trajectory
-sim <- simulate(pomp_object,params=params,format = "data.frame", nsim = 100)
-x <- trajectory(pomp_object,params=params,format="d")
+sim <- simulate(pomp_object,params=params,format = "data.frame", nsim = 100, time = seq(0, 356*3))
+x <- trajectory(pomp_object,params=params,format="d", time = seq(0, 356*3))
 
 
 colnames(pos_dat) <-c("time", "true_pos")

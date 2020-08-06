@@ -58,6 +58,7 @@ pomp_object <- pomp(data=pos_dat,
                     rmeasure=rmeas,
                     dmeasure=dmeas,
                     covar=covar_samplesize,
+                    accumvars = "H",
                     cdir=".", cfile="hacking_win_bug"
 )
 
@@ -96,17 +97,9 @@ plots <- plots(sim_plus_data, x, sim)
 names(plots) <- c(   "plIm", "plRm", "plEm", "plSm", 
                      "plIj", "plRj", "plEj", "plSj", 
                      "plIn", "plRn", "plEn", "plSn",
-                     "plMa")
+                     "plMa", "plH", "plprev")
 
 
-# plotting prevalence from tests and actual from the model
 
-ggplot(NULL)+
-  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_model_prev, group= factor(.id), colour = "Simulated model prevalence"
-  ))+
-  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = true_test_prev, group= factor(.id), colour = "Clunes underroost prevalence"
-  ))+
-  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_test_prev, group= factor(.id), colour = "Simulated underroost prevalence"
-  ))->plprev
 
 

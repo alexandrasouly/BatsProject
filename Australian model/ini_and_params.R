@@ -6,7 +6,8 @@ states <- function(){
                  "Sn","Sj", "Sm", "Sf",
                  "En","Ej", "Em", "Ef",
                  "In","Ij", "Im", "If",
-                 "Rn","Rj", "Rm", "Rf")
+                 "Rn","Rj", "Rm", "Rf",
+                 "H")
   
   return(state_names)
 }

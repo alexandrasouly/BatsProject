@@ -134,6 +134,8 @@ model_5_params <- c(
  #                        Rj = 0;
  #                        Rm = 0;
  #                        Rf = 0;
+
+ #                        H = 0;
  #                        
  #                        ")
  # 
@@ -224,6 +226,7 @@ model_5_params <- c(
  #                        Rj = 0;
  #                        Rm = 0;
  #                        Rf = 0;
+ #                        H = 0;
  #                        
  #                        ")
  # 
@@ -313,6 +316,8 @@ model_5_params <- c(
                         Rj = 0;
                         Rm = 0;
                         Rf = 0;
+                        
+                        H = 0;
 
                         ")
  model_4_params_lower <- c(
@@ -440,6 +445,8 @@ model_5_params <- c(
                         Rj = 0;
                         Rm = 0;
                         Rf = 0;
+                        
+                        H = 0;
 
                         ")
     
@@ -570,6 +577,8 @@ model_5_params <- c(
                         Rj = 0;
                         Rm = 0;
                         Rf = 0;
+                        
+                        H = 0;
 
                         ")
     model_6_params_lower <- c(

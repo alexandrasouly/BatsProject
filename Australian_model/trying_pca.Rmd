@@ -1,0 +1,72 @@
+---
+title: "Trying PCA"
+output: html_notebook
+---
+
+
+I am trying PCA to see which of my variables are correlated to each other. I am not very familiar with this method, so I hope what I am applying to makes some sense.
+
+
+  I will be using the results of filtering model 8 with phi fixed, selecting those results that had likelihood better than -60. This is since PCA is not using the likelihood values in the process, I just want to focus on the correlation in "higher likelihood areas". We started the filtering from a Sobol grid with uniform initial choices of the parameters we are fitting, so I assume that the filtering result parameters do not have any arbitrary correlation between the parameters that is not coming from the model itself (unlike if I had chosen the parameter vectors for the PCA manually, then obviously no information would be in the correlations PCA would give us.)
+  This is the data I will be using for the pca:
+```{r}
+pairs(~R0+gamma_val+omega_val+zeta+c+s+s_v+phi_v+disp+d,
+      data = model8_likelihoods[202:224,],
+      pch=20,
+      main ="Model 8 high likelihood areas with phi fixed" )
+```
+
+
+
+```{r}
+
+
+
+model8_likelihoods[202:224,] %>%
+  select(R0,gamma_val, omega_val, c, s, s_v, phi_v, zeta, disp, d) -> pca_data
+prcomp(pca_data, center = TRUE,scale. = TRUE) -> model8pca
+summary(model8pca)
+library(ggbiplot)
+ggbiplot(model8pca)
+```
+
+  We have the first two PCs account for 61% of the variance. The plot is a loading plot, the vector lenghts orthogonal to the axes represent the weights loads of the parameters onto each PC, so how much they contribute the PC1 and PC2. PC1 and PC2 are such that they are uncorrelated/ orthogonal. we can take the following conclusions of a loading plot:
+  -When two vectors are close, forming a small angle, the two variables they represent are positively correlated.
+  -If they meet each other at 90°, they are not likely to be correlated.
+  -When they diverge and form a large angle (close to 180°), they are negative correlated.
+  
+  This tells us that
+  - s,disp, gamma and d are strongly positively correlated,
+  - c and zeta are negatively correlated to all of the above
+  - R0 and omega_val are negatively correlated 
+  - s_v and phi_v are negatively corelated
+  - s_v is not correlated to c, s, disp, gamma and d
+  
+  
+  Now let us see if it gives us a similar result when we did filtering on model 6, as before phi fixed, loglik at most -60 and start with Sobol grid before filtering.
+```{r}  
+  pairs(~R0+gamma_val+omega_val+zeta+c+s+s_v+phi_v+disp+d,
+      data = model6_likelihoods[31:53,],
+      pch=20,
+      main ="Model 6 high likelihood areas with phi fixed" )
+```  
+  
+```{r}
+
+model6_likelihoods[31:53,] %>%
+  select(R0, gamma_val, c, s, s_v, phi_v, zeta, disp, d) -> pca_data
+prcomp(pca_data, center = TRUE,scale. = TRUE) -> model6pca
+summary(model6pca)
+library(ggbiplot)
+ggbiplot(model6pca)
+
+
+model6_likelihoods[1:15,] %>%
+  select(R0, gamma_val, c, s, phi, s_v, phi_v, zeta, disp, d) -> pca_data
+prcomp(pca_data, center = TRUE,scale. = TRUE) -> model6pca
+summary(model6pca)
+library(ggbiplot)
+ggbiplot(model6pca)
+```
+
+  Conclusion: this does'nt make sense, I dont think it works at all. 

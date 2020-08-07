@@ -10,6 +10,7 @@ library(plyr)
 library(dplyr)
 library(ggplot2)
 library(ggpubr)
+library(lattice)
 library(doParallel)
 registerDoParallel(cores= 4)
 library(doRNG)
@@ -35,16 +36,69 @@ guesses <- vector(mode = "list", length = 5) #initialize empty list
 for(i in 1:5)
 {merge(zeta_d_guesses, other_params_guesses[i,]) -> guesses[[i]]}
 ```
- Here we plot 150 points of varying zeta and d, while we kept all the other params fix, at the best estimate of model 8, which is at the time of writing
+ Here we plot 150 points of varying zeta and d, while we kept all the other params fix, at the best estimate of model 8, which is at the time of writing is
  
 ```{r}
-best_guess %>% select(-zeta, -d)
+guesses[[1]][1,] %>% select(-zeta, -d)
 ```
 
 
 ```{r}
 
-model8_likelihoods %>% filter(disp== disp[[1]]) %>% select(zeta,d, loglik)  -> zeta_d_table
+model8_likelihoods %>% filter(abs(as.numeric(R0) - 27.43327)<0.001) %>% select(zeta,d, loglik)  -> zeta_d_table
+rbPal <- colorRampPalette(c('black','yellow'))
+Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
+
+plot(zeta_d_table$zeta,zeta_d_table$d,pch = 20,col = Col) 
+ legend(
+        "topright",
+        inset=c(-0,0),
+        title="loglik",
+        legend=levels(cut(zeta_d_table$loglik,breaks = 10)),
+        col =rbPal(10),
+        pch=20,
+        cex = 0.8,
+        par(xpd=TRUE))
+
+levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
+          panel = panel.levelplot.points, cex = 1.2
+    ) + 
+    layer_(panel.2dsmoother(..., n = 200))
+
+ 
+ model8_likelihoods %>% filter(abs(as.numeric(R0) - 27.43327)<0.001, loglik>max(loglik)-100) %>% select(zeta,d, loglik)  -> zeta_d_table
+rbPal <- colorRampPalette(c('black','yellow'))
+Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
+
+levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
+          panel = panel.levelplot.points, cex = 1.2
+    ) + 
+    layer_(panel.2dsmoother(..., n = 100))
+ 
+  model8_likelihoods %>% filter(abs(as.numeric(R0) - 27.43327)<0.001, loglik>max(loglik)-50) %>% select(zeta,d, loglik)  -> zeta_d_table
+rbPal <- colorRampPalette(c('black','yellow'))
+Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
+
+levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
+          panel = panel.levelplot.points, cex = 1.2, contour = TRUE,
+          xlim =  c(0.2,0.9))+ 
+    layer_(panel.2dsmoother(..., n = 100)) -> plt1
+```
+  We can beautifully see how zeta and d correlate when nothing else changes. With applying a smoother, we see the different layers in the likelihood surface. The large deep blue layer on the last plot is what we need to maximalise the likelihood. This means we will only need to fit one of zeta and d if this surface is the same for other parameter choices.
+  
+  Now we need to try and see if this works the same with any other fixed params, or if we just found something special true only for one set of fixed other params. (I really hope this is universal!) If it is true, we will need to find the function that describes that layer, generate more points on and around it to narrow the region down, and we're set, one fewer params to fit!
+  Then we can think about exploring if this is true for the other models as well.
+    
+   Now let us try and fix the second best set of other params we got so far.
+   
+The second set of params we are wroking with is 
+```{r}
+guesses[[2]][1,] %>% select(-zeta, -d)
+```
+
+```{r}
+
+model8_likelihoods %>% filter(abs(as.numeric(R0) - 70.30774	)<0.001) %>% select(zeta,d, loglik)  -> zeta_d_table
 rbPal <- colorRampPalette(c('black','yellow'))
 Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
 
@@ -67,7 +121,7 @@ levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d,
 
  
  
- model8_likelihoods %>% filter( disp== disp[[1]], loglik>max(loglik)-100) %>% select(zeta,d, loglik)  -> zeta_d_table
+ model8_likelihoods %>% filter(abs(as.numeric(R0) - 70.30774	)<0.001, loglik>max(loglik)-100) %>% select(zeta,d, loglik)  -> zeta_d_table
 rbPal <- colorRampPalette(c('black','yellow'))
 Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
 
@@ -76,20 +130,74 @@ levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d,
     ) + 
     layer_(panel.2dsmoother(..., n = 100))
  
-  model8_likelihoods %>% filter( disp== disp[[1]], loglik>max(loglik)-50) %>% select(zeta,d, loglik)  -> zeta_d_table
+  model8_likelihoods %>% filter(abs(as.numeric(R0) - 70.30774	)<0.001, loglik>max(loglik)-50) %>% select(zeta,d, loglik)  -> zeta_d_table
 rbPal <- colorRampPalette(c('black','yellow'))
 Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
 
 levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
           panel = panel.levelplot.points, cex = 1.2, contour = TRUE,
           xlim =  c(0.2,0.9))+ 
-    layer_(panel.2dsmoother(..., n = 100))
+    layer_(panel.2dsmoother(..., n = 100)) -> plt2
       
+```  
+ 
+ The third set of params we are wroking with is 
+```{r}
+guesses[[3]][1,] %>% select(-zeta, -d)
 ```
-  We can beautifully see how zeta and d correlate when nothing else changes. With applying a smoother, we see the different layers in the likelihood surface. The large deep blue layer on the last plot is what we need to maximalise the likelihood. This means we will only need to fit one of zeta and d if this surface is the same for other parameter choices.
-  
-  Now we need to try and see if this works the same with any other fixed params, or if we just found something special true only for one set of fixed other params. (I really hope this is universal!) If it is true, we will need to find the function that describes that layer, generate more points on and around it to narrow the region down, and we're set, one fewer params to fit!
-  Then we can think about exploring if this is true for the other models as well.
-    
-   Now let us try and fix the second best set of other params we got so far.
 
+```{r}
+
+model8_likelihoods %>% filter(abs(as.numeric(R0) - 51.73001	)<0.001) %>% select(zeta,d, loglik)  -> zeta_d_table
+rbPal <- colorRampPalette(c('black','yellow'))
+Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
+
+plot(zeta_d_table$zeta,zeta_d_table$d,pch = 20,col = Col) 
+ legend(
+        "topright",
+        inset=c(-0,0),
+        title="loglik",
+        legend=levels(cut(zeta_d_table$loglik,breaks = 10)),
+        col =rbPal(10),
+        pch=20,
+        cex = 0.8,
+        par(xpd=TRUE))
+
+levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
+          panel = panel.levelplot.points, cex = 1.2
+    ) + 
+    layer_(panel.2dsmoother(..., n = 200))
+
+
+ 
+ 
+ model8_likelihoods %>% filter(abs(as.numeric(R0) - 51.73001	)<0.001, loglik>max(loglik)-100) %>% select(zeta,d, loglik)  -> zeta_d_table
+rbPal <- colorRampPalette(c('black','yellow'))
+Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
+
+levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
+          panel = panel.levelplot.points, cex = 1.2
+    ) + 
+    layer_(panel.2dsmoother(..., n = 100))
+ 
+  model8_likelihoods %>% filter(abs(as.numeric(R0) - 51.73001	)<0.001, loglik>max(loglik)-50) %>% select(zeta,d, loglik)  -> zeta_d_table
+rbPal <- colorRampPalette(c('black','yellow'))
+Col <- rbPal(10)[as.numeric(cut(zeta_d_table$loglik,breaks = 10))]
+
+levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d, 
+          panel = panel.levelplot.points, cex = 1.2, contour = TRUE,
+          xlim =  c(0.2,0.9))+ 
+    layer_(panel.2dsmoother(..., n = 100)) ->plt3
+    
+```  
+
+  We would like to be able to only fit d or zeta, and find a function that allows us to calculate the other for the highest likelihood value. Let us try and see the contours of these areas for the three different cases.
+  
+```{r}
+library(ggpubr)
+
+plt1
+plt2
+plt3
+```  
+  This suggests that there is a very strong correlation between zeta and d, the shape of the surface is almost the same,  but they also depend on other variables as the location of the surfaces are different.

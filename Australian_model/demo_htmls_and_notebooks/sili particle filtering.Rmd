@@ -1,0 +1,178 @@
+---
+title: "Trying particle filtering on SILI with maternal immunity and seasonality model"
+output: html_notebook
+---
+Loading the packages. In the pomp model script, we have specified the starting parameters, which are Aaron's posterior estimates. After reaching equilibrium, we get the following population dynamics:
+```{r fig.width: 8 }
+source("full_pomp_model.R")
+
+library(foreach)
+library(iterators)
+library(dplyr)
+library(ggplot2)
+library(pomp)
+library(ggpubr)
+ggarrange(plotlist = plots, ncol = 4)
+plprev
+```
+
+We use the 3 years of Clunes data here. The red line is the collected underroost data, the blue lines are our simulated underroost test results. We see that this looks like a reasonable fit to start with.  
+  
+We calculate the likelihood of SILI with  seasonal forcing at Aaron's posterior parameter values (model 4). We take m, mj, mu, omega_m and kappa (= 5000) as fixed, since these are more or less fixed from literature and Clunes usually has a population between 4000 and 6000 bats. For now, we only fit the infection parameters and birth pulses, and take the rest of the population dynamics as they are. 
+```{r}
+pf <- replicate(5, pfilter(pomp_object, params = params, Np=2000))
+
+ll <- sapply(pf,logLik)
+logmeanexp(ll,se=TRUE)
+
+plot(pf[[1]])
+```
+  With these parameters, we get the estimate for loglikelihood as -87 (with very low standard error). On the diagnostic plot, we can see that the first starting peak is causing the most trouble, and the smaller peaks later.   
+
+I attempt to compute in parrallel on multiple (8) cores on my laptop and I am setting a parallel RNG. 
+This is only a baby example to check the runtime, I will run it only once.
+We set IF2 to estimate the parameters with 20 iterations and 500  Normally I think I would need 50 iterations and 2000 particles. I also discovered that the runtime is much slower in a markdown file, so I will run separately in a script and just plot here.
+  Then we evaluate the log-likelihood at the result values with a particle filter.
+```{r iterated filtering}
+
+library(doParallel)
+registerDoParallel(cores= 8)
+library(doRNG)
+registerDoRNG(625904618)
+library(pomp)
+
+```
+
+This is now very slow as I have fixed burn-in time as well, but at least it's doing the correct thing!.... For one run, 40 iterations and 500 particles, the time was around 10 minutes. I need to check how it scales with increased parameters. Also if I can allocate more CPU to R somehow.
+
+user  system elapsed 
+ 0.03    0.10  595.70  
+```{r}
+
+system.time(
+  foreach(i = 1, .combine=c, .packages = "pomp") %dopar%
+{i
+  mif2( pomp_object, params = model_4_params, Nmif=20, Np=750, 
+     cooling.fraction.50=0.5,cooling.type="geometric",
+     rw.sd=rw.sd(R0=0.02, rho_val=0.02, epsilon_val = 0.02, 
+                 zeta=0.02, c=0.02,
+                 s=0.02, phi=0.02,
+                 s_v=0.02, phi_v=0.02, disp=0.02, d=0.01)
+) }-> mf3
+)
+
+# evaluate the log likelihood here
+replicate(5, mf3 %>% pfilter() %>% logLik()) %>%
+    logmeanexp(se=TRUE) -> ll_list
+ll_list <- rbind(ll_list)
+names(ll_list) <- c("loglik", "se")
+mf3_coef <-rbind(coef(mf3))
+
+                  
+data.frame(mf3_coef,loglik=ll_list[[1]],loglik.se=ll_list[[2]]) -> estimates3
+    
+estimates3  %>%
+select(loglik, loglik.se, R0, rho_val, epsilon_val,  zeta, c,
+      s, phi,s_v, phi_v, disp, d) %>%
+arrange(-loglik)
+```
+
+  We get a loglikelihood of -67, which is better than our starting value, even if this ran for only a very short time.
+``` {r}
+mf3 %>%
+  traces() %>%
+  melt() %>%
+  filter( variable %in% c("loglik","R0", "gamma_val",  "zeta", "c",
+                 "s", "phi", "disp", "d")) -> filtered_plots
+  
+ggplot(filtered_plots)+
+aes(x=iteration,y=value)+
+geom_line()+
+guides(color=FALSE)+
+facet_wrap(~variable,scales="free_y")
+
+
+```
+
+  There appears to be no convergence yet, so we will indeed need to run this for more iterations when we run it properly. Let's save these params and check what the fitted version of the model looks like:
+   
+```{r improved params}
+model_4_improved_params <- c(
+  
+  # base dynamics params
+  model_type = 3, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
+
+  R0 =  8.79,
+  gamma_val = 0, # recovery rate I -> R
+  omega_val = 0, # immune waning rate R -> S
+  omega_m_val = 0.53, # maternal antibody waning rate
+  kappa_val = 5000, # carrying capacity for Clunes
+  rho_val = 30.77, # I -> L
+  epsilon_val = 2.46, # L -> I
+
+
+  mu_val = 1.37, # juvenile maturation rate
+  mj_val = 0.50, # juvenile death rate
+  m_val = 0.23, # adult death rate
+  delta_t = 365, # scaling time as days instead of years
+
+  # seasonality params
+  c = 40.37, # birth pulse scaling factor
+  s = 56.09, # birth pulse synchronicity
+  phi = 35.43, # birth pulse time shift
+
+  c_v = 1, # seasonal drive scaling factor
+  s_v = 2.97, # seasonal drive synchronicity
+  phi_v = 0.06, # sesonal drive time shift
+
+  # measuring process params
+  zeta = 0.53, # test accuracy
+  disp = 757, # dispersion parameter
+  d = 8.8 # number of bats contributing to the same pool
+
+)
+```
+  We set the parameters as this version and recalculate the model.
+
+  
+```{r new params}
+
+
+sim <- simulate(pomp_object,params=model_4_improved_params,format = "data.frame", nsim = 100)
+x <- trajectory(pomp_object,params=model_4_improved_params,format="d")
+
+
+colnames(pos_dat) <-c("time", "true_pos")
+sim_plus_data <- merge(sim, pos_dat, by.sim = "time")
+sim_plus_data <- merge(sim_plus_data, samplesize_dat, by.sim_plus_data = "time")
+sim_plus_data %>% mutate(true_test_prev = true_pos/samplesize, sim_test_prev = pos/samplesize,
+                         sim_model_prev = (In + Ij + Im + If)/
+                           (Sn + Sj + Sm + Sf + En + Ej + 
+                              Em + Ef + In + Ij + Im + If +
+                              Rn + Rj + Rm + Rf + Ma)
+) -> sim_plus_data
+
+source("plots.R")
+plots <- plots(sim_plus_data, x, sim)
+names(plots) <- c(   "plIm", "plRm", "plSm", 
+                     "plIj", "plRj", "plSj", 
+                     "plIn", "plRn", "plSn",
+                     "plMa")
+
+
+# plotting prevalence from tests and actual from the model
+
+ggplot(NULL)+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_model_prev, group= factor(.id), colour = "Simulated model prevalence"
+  ))+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = true_test_prev, group= factor(.id), colour = "2019 Clunes underroost prevalence"
+  ))+
+  geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_test_prev, group= factor(.id), colour = "Simulated underroost prevalence"
+  ))->plprev
+
+ggarrange(plotlist = plots, ncol = 3)
+plot(plprev)
+
+
+```
+It looks like we have kept the equilibria, so the burn-in time was working this time! Also we see that the peaks are in the correct places for the fit, but the heights are not really. I will investigate this by adding a seasonal drive scaling coeff that changes yearly and alter the height of the peak.

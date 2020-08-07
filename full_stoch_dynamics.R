@@ -337,10 +337,10 @@ stochStep <- Csnippet("
 init_states <- Csnippet("
   
   Ma = 0;
-  Sn = 20;
-  Sj = 20;
-  Sm = 40;
-  Sf = 40;
+  Sn = 50;
+  Sj = 50;
+  Sm = 100;
+  Sf = 100;
   
   En = 0;
   Ej = 0;
@@ -349,8 +349,8 @@ init_states <- Csnippet("
   
   In = 5;
   Ij = 5;
-  Im = 10;
-  If = 10;
+  Im = 30;
+  If = 30;
   
   Rn = 0;
   Rj = 0;

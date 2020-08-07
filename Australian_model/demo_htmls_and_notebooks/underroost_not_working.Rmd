@@ -1,0 +1,90 @@
+---
+title: "Adding in measuring"
+output:
+  html_document:
+    df_print: paged
+---
+
+The function I am using to simulate tests:
+
+```{r rmeasure}
+library(pomp)
+  rmeas <- Csnippet("
+                          
+                          double N = (Sn + Sj + Sm + Sf + En + Ej + Em + Ef +                                       In + Ij + Im + If 
+                                      + Rn + Rj + Rm + Rf + Ma);
+                          double I_total =  In + Ij + Im + If;
+                          double p = zeta * I_total / N;
+                          double p_pool = 1 - pow((1 - p), d);
+                          pos = rbetabinom(samplesize, p_pool, disp
+                          ")
+```
+  For now, I used the following parameters that should be the posteriors Aaron got in his model 5, SIR with no seasonal forcing:
+```{r params}
+params <- c(
+  
+  # base dynamics params
+  beta_val = 0.06, # infection rate S -> R
+  gamma_val = 3.135, # recovery rate I -> R
+  omega_val = 0, # immune waning rate R -> S
+  omega_m_val = 0.8, # maternal antibody waning rate
+  kappa_val = 2350, # carrying capacity
+  rho_val = 0, # I -> L 
+  epsilon_val = 0, # L -> I 
+  mu_val = 1.37, # juvenile maturation rate
+  mj_val = 0.50, # juvenile death rate
+  m_val = 0.23, # adult death rate
+  delta_t = 365, # scaling time as days instead of years
+  
+  # seasonality params
+  c = 18.65, # birth pulse scaling factor
+  s = 130, # birth pulse synchronicity
+  phi = 7.19, # birth pulse time shift
+  
+  # measuring process params
+  zeta = 0.3, # test accuracy
+  disp = 1000, # dispersion parameter
+  d = 10 # number of bats contributing to the same pool
+)
+``` 
+
+ And the following equilibrium initial values, which I have got after 50 years of running:
+```{r ini}
+   init_states <- Csnippet("
+                        
+                        Ma = 501;
+                        Sn = 3;
+                        Sj = 70;
+                        Sm = 3;
+                        Sf = 3;
+                        
+                        En = 0;
+                        Ej = 0;
+                        Em = 0;
+                        Ef = 0;
+                        
+                        In = 3;
+                        Ij = 60;
+                        Im = 7;
+                        If = 7;
+                        
+                        Rn = 4;
+                        Rj = 255;
+                        Rm = 479;
+                        Rf = 479;
+                        
+                        ")                       
+```
+
+Now we can see the model with 100 simulations:
+
+```{r sims}
+library(ggpubr)
+source("full_pomp_model.R")
+ggarrange(plotlist =plots, ncol = 3)
+```
+
+This looks as expected, I think the model is working fine. Now lets look at our simulated test results:
+```{r}
+plprev
+```

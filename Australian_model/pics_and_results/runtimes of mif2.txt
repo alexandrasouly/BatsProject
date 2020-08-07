@@ -1,0 +1,18 @@
+ i = 1, Nmif=20, Np=500:
+ 
+  user  system elapsed 
+  0.19    0.22  262.20 
+ 
+ 
+  i = 1, Nmif=40, Np=500:
+  
+   user  system elapsed 
+   0.03    0.10  595.70 
+   
+  i = 1, Nmif=20, Np=750:
+  
+   user  system elapsed 
+   -       -      420
+   
+   
+   

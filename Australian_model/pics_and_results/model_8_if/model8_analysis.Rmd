@@ -1,0 +1,180 @@
+---
+title: "Model 8 filtering results"
+output: html_notebook
+fig_width: 12
+---
+
+```{r}
+library(foreach)
+library(iterators)
+library(plyr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(doParallel)
+registerDoParallel(cores= 6)
+library(doRNG)
+registerDoRNG(625904618)
+library(pomp)
+```
+
+In this notebook I examine Model 8, which is SIRS with a seasonal birth pulse and we fit a seasonal drive for recovery rate.  
+
+  We are not fitting population dynamics parameters except for the birth pulse. The params we are not fitting are at Aarons posterior estimates, and kappa = 5000 as fro the Clunes site estimates of bats are aroud 4000-6000. For the other params, we start the fitting with intiial values given by 5 repeats of Aaron's posterior values and 25 point from a Sobol grid of his 95% CI"
+
+```{r}
+pairs(~R0+gamma_val+omega_val+zeta+c+s+phi+s_v+phi_v+disp+d, data = first_guesses, pch = 20, main = "Model 8 fitting starting values")
+```
+
+  
+    Using 2000 particels and 50 iterations with iterated filtering, we got the following results for iterated filtering:
+```{r}
+first_mf3iter2 %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "omega_val", "gamma_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d") )%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+```
+  Here we see that the loglikelihood went up quickly after the first few iterations, and then stayed at around the same level.
+  
+  The param that converged for almost all initial guesses is phi_v (the seasonal drive shift), R0, s and gamma stayed in a smaller range. Some params, like omega and zeta didn't move much from the initial guesses. Phi shows a set of well-defined local minima valleys that the values converge to.
+  
+  The top values are the following, the best has loglik around -54, lower than what we found for the SILI model. We can also see that we have a large range for the end parameters.
+```{r}
+head(model8_likelihoods, 5) %>%
+  select (c("loglik", "loglik.se", "R0", "gamma_val", "omega_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d"))
+```
+Then, I took the best results, made a 10 point Sobol grid from the range of the 7 parameters, and also added the highest likelihood set of params 10 times to create a new initial starting set of 20 points. I tried what happens when I use 4000 particles instead of 2000 particles. 
+
+```{r}
+pairs(~R0+gamma_val+omega_val+zeta+c+s+phi+s_v+phi_v+disp+d, data = guesses, pch = 20, main = "Model 8 fitting starting values")
+```
+
+```{r}
+mf3iter2 %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "omega_val", "gamma_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d") )%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+```
+This is not a significantly better behavior and we didn't get lower likelihoods , so I don't think  more particles improved the fitting process.
+```{r}
+head(model8_likelihoods_top_again, 5) %>%
+  select (c("loglik", "loglik.se", "R0", "gamma_val", "omega_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d"))
+```
+
+ Let us combine them to have all results in the same place. 
+ 
+```{r}
+model8_likelihoods %>%
+bind_rows(model8_likelihoods_top_again) %>%
+arrange(-loglik) %>% write.csv("model8_likelihoods.csv")
+model8_likelihoods <- read.csv("~/BatsProject/Australian model/pics_and_results/model_8_if/model8_likelihoods.csv", row.names=1)
+```
+
+```{r}
+append(mf3iter2, first_mf3iter2) %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "omega_val", "gamma_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d") )%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+```
+
+  Now we can visualise differently where our parameters converged to. The grey points are the starting values (same as on the first plot), and the red point are the results of the filtering.
+```{r}
+  all <- ldply(list(guess=guesses,result=subset(model8_likelihoods,loglik>max(loglik)-20)))
+pairs(~R0+gamma_val+omega_val+zeta+
+        c+s+phi+s_v+phi_v+disp+d,data=all,col=ifelse(all$.id=="guess",grey(0.5),"red"),pch=20,main ="Model 8 high likelihood areas" )
+```
+
+  On this plot, we look independently at the likelihoods of the resulting parameter values:
+```{r}
+gather(model8_likelihoods, key, value, -loglik) %>%
+  filter(key %in% c( "R0", "gamma_val", "omega_val",  "zeta", "c",
+                              "s", "phi","s_v", "phi_v", "disp", "d")) %>%
+ggplot(aes(value, loglik), main = "Results of model 8 IF") + 
+   geom_point() +
+  facet_wrap(~ key , scales="free_x", ncol=4) -> pl4
+
+plot(pl4)
+``` 
+  
+    Now we take the best four results and simulate with them, to see what we got:
+```{r}
+source("./../../pomp_model_fn.R")
+source("./../../aarons_params.R")
+
+head(model8_likelihoods, 4) %>%
+  select( -c("loglik","loglik.se")) -> best_params
+apply(best_params, 1, function(x)
+  pomp_model_fn(site="CLU", year="all", 
+                init_states= model_8_before_equ_ini,
+                input_params = x)) -> best_params_plots
+
+for (i in 1:4){
+    best_params_plots[[i]] +
+     geom_point( aes(x = clu_catching$min_date, y = clu_catching$hen_prevalence)) -> plt
+    plot(plt)
+  }
+```
+While the fourth one matches the underroost prevalence slightly less than the previous four, it matches the ctahcing prevalence samples rather well!     
+### Fixing Phi ###
+  
+  We have now fixed phi, let's see if we have better convergence:
+```{r}
+mf3iter2 %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "omega_val", "gamma_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d") )%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+``` 
+
+We have much a much smaller range on phi_v, gamma, R0, c and s. Nothing changed about zeta and omega_val. I will have to explore if varying omega_val in this model has a lot of effect or not. Our overall estimates have a much better likelihoods, fixing phi definitely did help!
+  
+```{r}
+model8_likelihoods  %>% filter(phi == 7.179) -> model8_likelihoods_phi_fixed
+head(model8_likelihoods_phi_fixed, 5) %>%
+  select (c("loglik", "loglik.se", "R0", "gamma_val", "omega_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d"))
+```  
+ 
+  We can see that fixing phi at the value from literature still gives us the same best likelihoods.
+  
+```{r}
+gather(model8_likelihoods_phi_fixed, key, value, -loglik) %>%
+  filter(key %in% c( "R0", "gamma_val", "omega_val", "zeta", "c",
+                              "s", "phi","s_v", "phi_v", "disp", "d")) %>%
+ggplot(aes(value, loglik), main = "Results of model 8 IF phi fixed") + 
+   geom_point() +
+  facet_wrap(~ key , scales="free_x", ncol=4) -> pl4
+
+plot(pl4)
+```
+        Gamma seems to cluster at a different value than without phi fixed, instead of around 16 with loglik -70, -80, it went to 12, with a much higher likelihood -55, -65. This gives us a better estimate for the true value of gamma. Same for R0. We can actually see the clusters for gamma_val and phi_v over a relatively small range. 

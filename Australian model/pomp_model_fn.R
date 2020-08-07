@@ -74,40 +74,31 @@ pomp_object <- pomp(data=pos_dat,
 # tail(pop_equ, 1)
 # plot()
 
-# simulating and calculating deterministic trajectory
-# sim <- simulate(pomp_object,params=input_params,format = "data.frame", nsim = 100, time = seq(0, 356*3))
-# x <- trajectory(pomp_object,params=input_params,format="d", time = seq(0, 356*3))
-# 
-# 
-# colnames(pos_dat) <-c("time", "true_pos")
-# sim_plus_data <- merge(sim, pos_dat, by.sim = "time")
-# sim_plus_data <- merge(sim_plus_data, samplesize_dat, by.sim_plus_data = "time")
-# sim_plus_data %>% mutate(true_test_prev = true_pos/samplesize, sim_test_prev = pos/samplesize,
-#                          sim_model_prev = (In + Ij + Im + If)/
-#                            (Sn + Sj + Sm + Sf + En + Ej + 
-#                               Em + Ef + In + Ij + Im + If +
-#                               Rn + Rj + Rm + Rf + Ma)
-# ) -> sim_plus_data
-# 
-# 
-# 
-# source("plots.R")
-# plots <- plots(sim_plus_data, x, sim)
-# names(plots) <- c(   "plIm", "plRm", "plEm", "plSm", 
-#                      "plIj", "plRj", "plEj", "plSj", 
-#                      "plIn", "plRn", "plEn", "plSn",
-#                      "plMa", "plH")
-# 
-# 
-# # plotting prevalence from tests and actual from the model
-# 
-# ggplot(NULL)+
-#   geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_model_prev, group= factor(.id), colour = "Simulated model prevalence"
-#   ))+
-#   geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = true_test_prev, group= factor(.id), colour = "Clunes underroost prevalence"
-#   ))+
-#   geom_line(data=sim_plus_data, alpha = 0.1,aes(x=time, y = sim_test_prev, group= factor(.id), colour = "Simulated underroost prevalence"
-#   ))->plprev
+#simulating and calculating deterministic trajectory
+sim <- simulate(pomp_object,params=input_params,format = "data.frame", nsim = 100, time = seq(0, 356*3))
+x <- trajectory(pomp_object,params=input_params,format="d", time = seq(0, 356*3))
 
-return(pomp_object)
+# 
+colnames(pos_dat) <-c("time", "true_pos")
+sim_plus_data <- merge(sim, pos_dat, by.sim = "time")
+sim_plus_data <- merge(sim_plus_data, samplesize_dat, by.sim_plus_data = "time")
+sim_plus_data %>% mutate(true_test_prev = true_pos/samplesize, sim_test_prev = pos/samplesize,
+                         sim_model_prev = (In + Ij + Im + If)/
+                           (Sn + Sj + Sm + Sf + En + Ej +
+                              Em + Ef + In + Ij + Im + If +
+                              Rn + Rj + Rm + Rf + Ma)
+) -> sim_plus_data
+
+# 
+# 
+source("plots.R")
+plots <- plots(sim_plus_data, x, sim)
+names(plots) <- c(   "plIm", "plRm", "plEm", "plSm",
+                     "plIj", "plRj", "plEj", "plSj",
+                     "plIn", "plRn", "plEn", "plSn",
+                     "plMa", "plH", "plprev")
+
+# 
+
+return(plots)
 }

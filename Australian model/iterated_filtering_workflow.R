@@ -35,7 +35,7 @@ Np = 2500
           Np = Np,
           cooling.fraction.50=0.5,
           cooling.type="geometric",
-          rw.sd=rw.sd(R0=0.02, zeta=0.02, rho_val = 0.02, epsilon_var = 0.2,
+          rw.sd=rw.sd(R0=0.02, zeta=0.02, rho_val = 0.02, epsilon_val = 0.2,
                       c=0.02, s=0.02, s_v=0.02, phi_v=0.02, disp=0.02, d=0.01)
         )
       }

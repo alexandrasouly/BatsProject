@@ -1,7 +1,7 @@
 #cureently set to model 8
 
 # loading observed data
-setwd("~/BatsProject/Australian model")
+setwd("~/BatsProject/Australian_model")
 library(dplyr)
 library(ggplot2)
 library(ggpubr)

@@ -1,7 +1,7 @@
 pomp_model_fn <-function(site, year, init_states, input_params){
   
 # loading observed data
-setwd("~/BatsProject/Australian model")
+setwd("~/BatsProject/Australian_model")
 library(dplyr)
 library(ggplot2)
 library(ggpubr)

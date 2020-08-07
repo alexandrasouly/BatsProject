@@ -90,3 +90,70 @@ for (i in 1:4){
   }
 ```
 We can see that none of them could really get the different sized peaks, but all got the peak locations. We will need inter-year params differing to be able to match those.     
+
+    
+### Fixing Phi ###
+  
+  We have now fixed phi, let's see if we have better convergence:
+```{r}
+mf3iter2 %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "rho_val", "epsilon_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d") )%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+```  
+
+  Epsilon shows better convergence in general (except for that one particle), c's range is much much smaller now, other than that sadly nothing converged better.
+  However, all the values have very good log-likelihoods:
+  
+    
+```{r}
+model4_likelihoods  %>% filter(abs(phi- 7.180000)< 0.001) %>%
+  arrange(-loglik) -> model4_likelihoods_phi_fixed
+
+head(model4_likelihoods_phi_fixed, 5) %>%
+  select (c("loglik", "loglik.se", "R0", "epsilon_val", "rho_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d"))
+```  
+  
+  These are actually all better than when we have not fixed phi!
+  
+```{r}
+gather(model4_likelihoods_phi_fixed, key, value, -loglik) %>%
+  filter(key %in% c( "R0", "rho_val", "epsilon_val",  "zeta", "c",
+                              "s", "phi","s_v", "phi_v", "disp", "d")) %>%
+ggplot(aes(value, loglik), main = "Results of model 4 IF") + 
+   geom_point() +
+  facet_wrap(~ key , scales="free_x", ncol=4) -> pl4
+
+plot(pl4)
+```
+  The highest values appear to be when zeta is 0.8 - 1, and d is 20-25. The highest values for s_v have also clustered together. 
+      Now we take the best four results and simulate with them, to see what we got:
+```{r}
+source("./../../pomp_model_fn.R")
+source("./../../aarons_params.R")
+
+head(model4_likelihoods, 4) %>%
+  select( -c("loglik","loglik.se")) -> best_params
+apply(best_params, 1, function(x)
+  pomp_model_fn(site="CLU", year="all", 
+                init_states= model_4_before_equ_ini,
+                input_params = x)) -> best_params_plots
+
+catching_data <- read.csv("~/BatsProject/Australian model/data/catching_data.txt", sep="")
+catching_data %>% filter(site_abbrev == "CLU") -> clu_catching
+for (i in 1:4){
+    best_params_plots[[i]]$plprev +
+    geom_point( data= clu_catching, aes(x = min_date, y = hen_prevalence)) -> plt
+    plot(plt)
+    best_params_plots[[i]]$plH  -> plt
+    plot(plt)
+  }
+```

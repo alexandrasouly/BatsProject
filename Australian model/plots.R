@@ -196,7 +196,7 @@ plots <- function(sim_plus_data, x, sim){
   plots <- list(plIm, plRm, plEm, plSm, 
                 plIj, plRj, plEj, plSj, 
                 plIn, plRn, plEn, plSn,
-                plMa, plH)
+                plMa, plH, plprev)
   return(plots)
   
   

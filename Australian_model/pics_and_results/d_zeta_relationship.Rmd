@@ -11,6 +11,7 @@ library(dplyr)
 library(ggplot2)
 library(ggpubr)
 library(lattice)
+library(latticeExtra)
 library(doParallel)
 registerDoParallel(cores= 4)
 library(doRNG)
@@ -141,7 +142,7 @@ levelplot(zeta_d_table$loglik ~ zeta_d_table$zeta*zeta_d_table$d,
       
 ```  
  
- The third set of params we are wroking with is 
+ The third set of params we are working with is 
 ```{r}
 guesses[[3]][1,] %>% select(-zeta, -d)
 ```

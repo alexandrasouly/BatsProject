@@ -1,6 +1,6 @@
 /* pomp C snippet file: hacking_win_bug */
-/* Time: 2020-08-07 12:08:50.355 +0200 */
-/* Salt: C3120E704A210AC05B9D7760 */
+/* Time: 2020-08-12 14:46:12.521 +0200 */
+/* Salt: 3621D0F3C7BF6C5D38BDCF1E */
 
 #include <C:/Users/alexa/OneDrive/Documents/R/win-library/4.0/pomp/include/pomp.h>
 #include <R_ext/Rdynload.h>
@@ -882,6 +882,7 @@ void __pomp_to_trans (double *__pt, const double *__p, const int *__parindex)
 	T_disp = log(disp);
 	T_d = log(d);
 	T_gamma_val = log(gamma_val);
+	T_omega_val = log(omega_val);
 	T_omega_m_val = log(omega_m_val);
 	T_s_v = log(s_v);
 	T_phi_v = log(phi_v);
@@ -988,6 +989,7 @@ void __pomp_from_trans (double *__p, const double *__pt, const int *__parindex)
 	disp = exp(T_disp);
 	d = exp(T_d);
 	gamma_val = exp(T_gamma_val);
+	omega_val = exp(T_omega_val);
 	omega_m_val = exp(T_omega_m_val);
 	s_v = exp(T_s_v);
 	phi_v = exp(T_phi_v);

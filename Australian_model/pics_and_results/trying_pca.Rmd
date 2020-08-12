@@ -6,7 +6,6 @@ output: html_notebook
 
 I am trying PCA to see which of my variables are correlated to each other. I am not very familiar with this method, so I hope what I am applying to makes some sense.
 
-
   I will be using the results of filtering model 8 with phi fixed, selecting those results that had likelihood better than -60. This is since PCA is not using the likelihood values in the process, I just want to focus on the correlation in "higher likelihood areas". We started the filtering from a Sobol grid with uniform initial choices of the parameters we are fitting, so I assume that the filtering result parameters do not have any arbitrary correlation between the parameters that is not coming from the model itself (unlike if I had chosen the parameter vectors for the PCA manually, then obviously no information would be in the correlations PCA would give us.)
   This is the data I will be using for the pca:
 ```{r}
@@ -43,7 +42,7 @@ ggbiplot(model8pca)
   - s_v is not correlated to c, s, disp, gamma and d
   
   
-  Now let us see if it gives us a similar result when we did filtering on model 6, as before phi fixed, loglik at most -60 and start with Sobol grid before filtering.
+  Now let us see if it gives us a similar result when we did filtering on model 6, as both for phi fixed and not, loglik at most -60 and start with Sobol grid before filtering.
 ```{r}  
   pairs(~R0+gamma_val+omega_val+zeta+c+s+s_v+phi_v+disp+d,
       data = model6_likelihoods[31:53,],
@@ -68,5 +67,4 @@ summary(model6pca)
 library(ggbiplot)
 ggbiplot(model6pca)
 ```
-
-  Conclusion: this does'nt make sense, I dont think it works at all. 
+  My results are so different that I think this approach does not make any sense this way, I would need another approach if I want to use pca on anything

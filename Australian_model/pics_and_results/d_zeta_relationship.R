@@ -53,3 +53,5 @@ lik_list3 <- foreach(guess=iter(guesses[[3]],by = "row" ),
   }
 
 lik_list2 <- as.data.frame(lik_list3)
+
+

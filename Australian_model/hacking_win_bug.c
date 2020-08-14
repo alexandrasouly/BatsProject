@@ -1,8 +1,8 @@
 /* pomp C snippet file: hacking_win_bug */
-/* Time: 2020-08-12 14:46:12.521 +0200 */
-/* Salt: 3621D0F3C7BF6C5D38BDCF1E */
+/* Time: 2020-08-14 13:24:05.882 +0200 */
+/* Salt: 7B71CF46FABC4D22DDA98259 */
 
-#include <C:/Users/alexa/OneDrive/Documents/R/win-library/4.0/pomp/include/pomp.h>
+#include <pomp.h>
 #include <R_ext/Rdynload.h>
 
  

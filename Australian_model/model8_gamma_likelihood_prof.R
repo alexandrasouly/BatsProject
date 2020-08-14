@@ -11,27 +11,30 @@ library(dplyr)
 library(ggplot2)
 library(ggpubr)
 library(doParallel)
-registerDoParallel(cores= 6)
+registerDoParallel(cores= 4)
 library(doRNG)
 registerDoRNG(625904618)
 library(pomp)
+# 
+# model8_likelihoods <- read.csv("~/BatsProject/Australian_model/model8_likelihoods.csv", row.names=1)
+# 
+# 
+# # select range of  parameter estimates between best and best - 10
+# model8_likelihoods %>% 
+#   filter( abs(phi - 7.179) < 0.001, loglik > max(loglik) - 10) %>%
+#   select(-loglik, -loglik.se) %>%
+#   apply(2,range) -> ranges
+#   
+# 
+# gamma_range <- seq(ranges[1,3], ranges[2,3], length.out = 5)
+# merge(gamma_range, sobolDesign(
+#   lower= ranges[1,-3],
+#   upper= ranges[2,-3],
+#   nseq=20)) -> guesses
+# 
+# names(guesses)[names(guesses) == "x"] <- "gamma_val"
 
-
-
-# select range of  parameter estimates between best and best - 10
-model8_likelihoods %>% 
-  filter( abs(phi - 7.179) < 0.001, loglik > max(loglik) - 10) %>%
-  select(-loglik, -loglik.se) %>%
-  apply(2,range) -> ranges
-  
-
-gamma_range <- seq(ranges[1,3], ranges[2,3], length.out = 5)
-merge(gamma_range, sobolDesign(
-  lower= ranges[1,-3],
-  upper= ranges[2,-3],
-  nseq=20)) -> guesses
-
-names(guesses)[names(guesses) == "x"] <- "gamma_val"
+see %>% select(-loglik, - loglik.se, -comment) -> guesses
 
   
 # ----------------------------------------- params of the filtering -------------------------------
@@ -56,7 +59,7 @@ mf3<- foreach(guess=iter(guesses,"row"),
   )
   }
 
-save(guesses, mf3,  file = "model8_lik_filtering_pt1.rda")
+save(guesses, mf3,  file = "model8_lik_filtering_cont1.rda")
 # ------------------------------------------- filtering part2 ---------------------------------------------
 mf3iter2<- foreach(mf3item=iter(mf3),
                    .combine=c,
@@ -67,7 +70,7 @@ mf3iter2<- foreach(mf3item=iter(mf3),
     continue(mf3item, Nmif = 30)
   }
 
-save(guesses, mf3iter2,  file = "model8_lik_filtering_pt2.rda")
+save(guesses, mf3iter2,  file = "model8_lik_filtering_cont2.rda")
 
 # -------------- calculating the likelihoods properly ------------------------------------------------
 

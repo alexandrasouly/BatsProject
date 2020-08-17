@@ -16,12 +16,15 @@ library(doRNG)
 registerDoRNG(625904618)
 library(pomp)
 # 
-# model8_likelihoods <- read.csv("~/BatsProject/Australian_model/model8_likelihoods.csv", row.names=1)
+ model8_likelihoods <- read.csv("~/BatsProject/Australian_model/pics_and_results/model_8_if/model8_likelihoods.csv", row.names=1)
 # 
 # 
 # # select range of  parameter estimates between best and best - 10
-# model8_likelihoods %>% 
-#   filter( abs(phi - 7.179) < 0.001, loglik > max(loglik) - 10) %>%
+ model8_likelihoods %>% 
+   filter(comment == "IF with gamma fixed ")  %>%
+   group_by(gamma_val) %>%
+   filter(rank(-loglik) <=5) -> guesses
+   
 #   select(-loglik, -loglik.se) %>%
 #   apply(2,range) -> ranges
 #   
@@ -34,7 +37,7 @@ library(pomp)
 # 
 # names(guesses)[names(guesses) == "x"] <- "gamma_val"
 
-see %>% select(-loglik, - loglik.se, -comment) -> guesses
+guesses %>% select(-loglik, - loglik.se, -comment) -> guesses
 
   
 # ----------------------------------------- params of the filtering -------------------------------

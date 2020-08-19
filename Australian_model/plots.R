@@ -13,6 +13,13 @@ plots <- function(sim_plus_data, x, sim){
   month_labels <- c("Jan 2017",  "Jun", "Sep", 
                         "Jan 2018",  "Jun", "Sep",
                         "Jan 2019",  "Jun", "Sep")
+  
+  
+  read.table("data/catching_data.txt") -> catching_data
+  catching_data %>% 
+    filter(site_abbrev == "CLU")%>%
+    select(min_date, hen_prevalence) -> clu_catching
+  names(clu_catching)[names(clu_catching) == "min_date"] <- "time"
 # plotting  
   ggplot(data=x,mapping=aes(x=time))+
     geom_line(aes(x=time, y=Im)) +
@@ -189,8 +196,9 @@ plots <- function(sim_plus_data, x, sim){
     scale_fill_manual(values = c("green", "blue"),
                       labels = c("Not Winter", "Winter"))+
     ylab("Prevalence proportion")+
-    theme(axis.text.x=element_text(angle=90,hjust=1))  ->plprev
-  
+    theme(axis.text.x=element_text(angle=90,hjust=1))-> plprev
+    plprev + geom_point(data = clu_catching,aes(x = time, 
+                    y = hen_prevalence))->plprev
   
   
   plots <- list(plIm, plRm, plEm, plSm, 

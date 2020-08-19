@@ -292,6 +292,41 @@ model_5_params <- c(
    d = 12 # number of bats contributing to the same pool
 
  )
+ 
+ model_4_params_inter_season <- c(
+   
+   # base dynamics params
+   model_type = 3, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
+   
+   R0 = 7.659, # infection rate S -> R
+   gamma_val = 0, # recovery rate I -> R
+   omega_val = 0, # immune waning rate R -> S
+   omega_m_val = 0.799, # maternal antibody waning rate
+   kappa_val = 5000, # carrying capacity
+   rho_val = 59.22, # I -> L
+   epsilon_val = 3.799, # L -> I
+   mu_val = 1.37, # juvenile maturation rate
+   mj_val = 0.5, # juvenile death rate
+   m_val = 0.187, # adult death rate
+   delta_t = 365, # scaling time as days instead of years
+   
+   # seasonality params
+   c = 16.068, # birth pulse scaling factor
+   s = 129.744, # birth pulse synchronicity
+   phi = 7.18, # birth pulse time shift
+   
+   c_v1 = 1, # seasonal drive scaling factor
+   c_v2 = 1, # seasonal drive scaling factor
+   c_v3 = 1, # seasonal drive scaling factor
+   s_v = 1.861, # seasonal drive synchronicity
+   phi_v = 0.034, # sesonal drive time shift
+   
+   # measuring process params
+   zeta = 0.661, # test accuracy
+   disp = 1000, # dispersion parameter
+   d = 12 # number of bats contributing to the same pool
+   
+ )
 
  # initial states from Aaron's draft
  model_4_before_equ_ini <- Csnippet("
@@ -422,6 +457,41 @@ model_5_params <- c(
 
     )
     #
+ 
+ model_8_params_inter_season <- c(
+   
+   # base dynamics params
+   model_type = 2, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
+   
+   R0 = 35.426,
+   gamma_val = 4.653, # recovery rate I -> R
+   omega_val = 5.701, # immune waning rate R -> S
+   omega_m_val = 0.801, # maternal antibody waning rate
+   kappa_val = 5000, # carrying capacity
+   rho_val = 0, # I -> L
+   epsilon_val = 0, # L -> I
+   mu_val = 1.37, # juvenile maturation rate
+   mj_val = 0.501, # juvenile death rate
+   m_val = 0.191, # adult death rate
+   delta_t = 365, # scaling time as days instead of years
+   
+   # seasonality params
+   c = 16.301, # birth pulse scaling factor
+   s = 129.979, # birth pulse synchronicity
+   phi = 7.179, # birth pulse time shift
+   
+   c_v1 = 1, # seasonal drive scaling factor
+   c_v2 = 1, # seasonal drive scaling factor
+   c_v3 = 1, # seasonal drive scaling factor
+   s_v = 125.843, # seasonal drive synchronicity
+   phi_v = 1.75, # sesonal drive time shift
+   
+   # measuring process params
+   zeta = 0.356, # test accuracy
+   disp = 100, # dispersion parameter
+   d = 5.221 # number of bats contributing to the same pool
+   
+ )
     # initial states from Aaron's draft
     model_8_before_equ_ini <- Csnippet("
 

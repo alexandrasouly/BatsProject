@@ -1,6 +1,6 @@
 /* pomp C snippet file: hacking_win_bug */
-/* Time: 2020-08-19 14:45:44.372 +0200 */
-/* Salt: 370A9580C364075BE108B435 */
+/* Time: 2020-08-17 13:10:14.314 +0200 */
+/* Salt: 07A3DDE7819AA14C0C3621D0 */
 
 #include <C:/Users/alexa/OneDrive/Documents/R/win-library/4.0/pomp/include/pomp.h>
 #include <R_ext/Rdynload.h>
@@ -24,14 +24,12 @@
 #define c		(__p[__parindex[12]])
 #define s		(__p[__parindex[13]])
 #define phi		(__p[__parindex[14]])
-#define c_v1		(__p[__parindex[15]])
-#define c_v2		(__p[__parindex[16]])
-#define c_v3		(__p[__parindex[17]])
-#define s_v		(__p[__parindex[18]])
-#define phi_v		(__p[__parindex[19]])
-#define zeta		(__p[__parindex[20]])
-#define disp		(__p[__parindex[21]])
-#define d		(__p[__parindex[22]])
+#define c_v		(__p[__parindex[15]])
+#define s_v		(__p[__parindex[16]])
+#define phi_v		(__p[__parindex[17]])
+#define zeta		(__p[__parindex[18]])
+#define disp		(__p[__parindex[19]])
+#define d		(__p[__parindex[20]])
 #define samplesize		(__covars[__covindex[0]])
 #define Ma		(__x[__stateindex[0]])
 #define Sn		(__x[__stateindex[1]])
@@ -97,9 +95,7 @@ void __pomp_rinit (double *__x, const double *__p, double t, const int *__statei
 #undef c
 #undef s
 #undef phi
-#undef c_v1
-#undef c_v2
-#undef c_v3
+#undef c_v
 #undef s_v
 #undef phi_v
 #undef zeta
@@ -141,14 +137,12 @@ void __pomp_rinit (double *__x, const double *__p, double t, const int *__statei
 #define c		(__p[__parindex[12]])
 #define s		(__p[__parindex[13]])
 #define phi		(__p[__parindex[14]])
-#define c_v1		(__p[__parindex[15]])
-#define c_v2		(__p[__parindex[16]])
-#define c_v3		(__p[__parindex[17]])
-#define s_v		(__p[__parindex[18]])
-#define phi_v		(__p[__parindex[19]])
-#define zeta		(__p[__parindex[20]])
-#define disp		(__p[__parindex[21]])
-#define d		(__p[__parindex[22]])
+#define c_v		(__p[__parindex[15]])
+#define s_v		(__p[__parindex[16]])
+#define phi_v		(__p[__parindex[17]])
+#define zeta		(__p[__parindex[18]])
+#define disp		(__p[__parindex[19]])
+#define d		(__p[__parindex[20]])
 #define samplesize		(__covars[__covindex[0]])
 #define Ma		(__x[__stateindex[0]])
 #define Sn		(__x[__stateindex[1]])
@@ -175,18 +169,6 @@ void __pomp_stepfn (double *__x, const double *__p, const int *__stateindex, con
   /* -------------------------- seasonal forcing ----------------------------------------- */
   
   double b = c * exp(-s * (pow(cos(M_PI * t / 365 - phi), 2)));
-  
-  double c_v;
-  
-   if( t < 1 ) {
-      c_v = 1;
-   } else if( t >= 1 && t <= 365 ) {
-      c_v = c_v1;
-   } else if( t >= 366 && t <= 730 ) {
-      c_v = c_v2;
-   } else {
-      c_v = c_v3;
-   }
   
   double sdrive = c_v * exp(-s_v * (pow(cos(M_PI * t / 365 - phi_v), 2)));
   
@@ -621,9 +603,7 @@ void __pomp_stepfn (double *__x, const double *__p, const int *__stateindex, con
 #undef c
 #undef s
 #undef phi
-#undef c_v1
-#undef c_v2
-#undef c_v3
+#undef c_v
 #undef s_v
 #undef phi_v
 #undef zeta
@@ -665,14 +645,12 @@ void __pomp_stepfn (double *__x, const double *__p, const int *__stateindex, con
 #define c		(__p[__parindex[12]])
 #define s		(__p[__parindex[13]])
 #define phi		(__p[__parindex[14]])
-#define c_v1		(__p[__parindex[15]])
-#define c_v2		(__p[__parindex[16]])
-#define c_v3		(__p[__parindex[17]])
-#define s_v		(__p[__parindex[18]])
-#define phi_v		(__p[__parindex[19]])
-#define zeta		(__p[__parindex[20]])
-#define disp		(__p[__parindex[21]])
-#define d		(__p[__parindex[22]])
+#define c_v		(__p[__parindex[15]])
+#define s_v		(__p[__parindex[16]])
+#define phi_v		(__p[__parindex[17]])
+#define zeta		(__p[__parindex[18]])
+#define disp		(__p[__parindex[19]])
+#define d		(__p[__parindex[20]])
 #define samplesize		(__covars[__covindex[0]])
 #define Ma		(__x[__stateindex[0]])
 #define Sn		(__x[__stateindex[1]])
@@ -722,9 +700,7 @@ void __pomp_rmeasure (double *__y, const double *__x, const double *__p, const i
 #undef c
 #undef s
 #undef phi
-#undef c_v1
-#undef c_v2
-#undef c_v3
+#undef c_v
 #undef s_v
 #undef phi_v
 #undef zeta
@@ -767,14 +743,12 @@ void __pomp_rmeasure (double *__y, const double *__x, const double *__p, const i
 #define c		(__p[__parindex[12]])
 #define s		(__p[__parindex[13]])
 #define phi		(__p[__parindex[14]])
-#define c_v1		(__p[__parindex[15]])
-#define c_v2		(__p[__parindex[16]])
-#define c_v3		(__p[__parindex[17]])
-#define s_v		(__p[__parindex[18]])
-#define phi_v		(__p[__parindex[19]])
-#define zeta		(__p[__parindex[20]])
-#define disp		(__p[__parindex[21]])
-#define d		(__p[__parindex[22]])
+#define c_v		(__p[__parindex[15]])
+#define s_v		(__p[__parindex[16]])
+#define phi_v		(__p[__parindex[17]])
+#define zeta		(__p[__parindex[18]])
+#define disp		(__p[__parindex[19]])
+#define d		(__p[__parindex[20]])
 #define samplesize		(__covars[__covindex[0]])
 #define Ma		(__x[__stateindex[0]])
 #define Sn		(__x[__stateindex[1]])
@@ -826,9 +800,7 @@ void __pomp_dmeasure (double *__lik, const double *__y, const double *__x, const
 #undef c
 #undef s
 #undef phi
-#undef c_v1
-#undef c_v2
-#undef c_v3
+#undef c_v
 #undef s_v
 #undef phi_v
 #undef zeta
@@ -873,14 +845,12 @@ void __pomp_dmeasure (double *__lik, const double *__y, const double *__x, const
 #define c		(__p[__parindex[12]])
 #define s		(__p[__parindex[13]])
 #define phi		(__p[__parindex[14]])
-#define c_v1		(__p[__parindex[15]])
-#define c_v2		(__p[__parindex[16]])
-#define c_v3		(__p[__parindex[17]])
-#define s_v		(__p[__parindex[18]])
-#define phi_v		(__p[__parindex[19]])
-#define zeta		(__p[__parindex[20]])
-#define disp		(__p[__parindex[21]])
-#define d		(__p[__parindex[22]])
+#define c_v		(__p[__parindex[15]])
+#define s_v		(__p[__parindex[16]])
+#define phi_v		(__p[__parindex[17]])
+#define zeta		(__p[__parindex[18]])
+#define disp		(__p[__parindex[19]])
+#define d		(__p[__parindex[20]])
 #define T_model_type		(__pt[__parindex[0]])
 #define T_R0		(__pt[__parindex[1]])
 #define T_gamma_val		(__pt[__parindex[2]])
@@ -896,14 +866,12 @@ void __pomp_dmeasure (double *__lik, const double *__y, const double *__x, const
 #define T_c		(__pt[__parindex[12]])
 #define T_s		(__pt[__parindex[13]])
 #define T_phi		(__pt[__parindex[14]])
-#define T_c_v1		(__pt[__parindex[15]])
-#define T_c_v2		(__pt[__parindex[16]])
-#define T_c_v3		(__pt[__parindex[17]])
-#define T_s_v		(__pt[__parindex[18]])
-#define T_phi_v		(__pt[__parindex[19]])
-#define T_zeta		(__pt[__parindex[20]])
-#define T_disp		(__pt[__parindex[21]])
-#define T_d		(__pt[__parindex[22]])
+#define T_c_v		(__pt[__parindex[15]])
+#define T_s_v		(__pt[__parindex[16]])
+#define T_phi_v		(__pt[__parindex[17]])
+#define T_zeta		(__pt[__parindex[18]])
+#define T_disp		(__pt[__parindex[19]])
+#define T_d		(__pt[__parindex[20]])
 
 void __pomp_to_trans (double *__pt, const double *__p, const int *__parindex)
 {
@@ -916,9 +884,6 @@ void __pomp_to_trans (double *__pt, const double *__p, const int *__parindex)
 	T_gamma_val = log(gamma_val);
 	T_omega_val = log(omega_val);
 	T_omega_m_val = log(omega_m_val);
-	T_c_v1 = log(c_v1);
-	T_c_v2 = log(c_v2);
-	T_c_v3 = log(c_v3);
 	T_s_v = log(s_v);
 	T_phi_v = log(phi_v);
 	T_rho_val = log(rho_val);
@@ -942,9 +907,7 @@ void __pomp_to_trans (double *__pt, const double *__p, const int *__parindex)
 #undef c
 #undef s
 #undef phi
-#undef c_v1
-#undef c_v2
-#undef c_v3
+#undef c_v
 #undef s_v
 #undef phi_v
 #undef zeta
@@ -965,9 +928,7 @@ void __pomp_to_trans (double *__pt, const double *__p, const int *__parindex)
 #undef T_c
 #undef T_s
 #undef T_phi
-#undef T_c_v1
-#undef T_c_v2
-#undef T_c_v3
+#undef T_c_v
 #undef T_s_v
 #undef T_phi_v
 #undef T_zeta
@@ -991,14 +952,12 @@ void __pomp_to_trans (double *__pt, const double *__p, const int *__parindex)
 #define c		(__p[__parindex[12]])
 #define s		(__p[__parindex[13]])
 #define phi		(__p[__parindex[14]])
-#define c_v1		(__p[__parindex[15]])
-#define c_v2		(__p[__parindex[16]])
-#define c_v3		(__p[__parindex[17]])
-#define s_v		(__p[__parindex[18]])
-#define phi_v		(__p[__parindex[19]])
-#define zeta		(__p[__parindex[20]])
-#define disp		(__p[__parindex[21]])
-#define d		(__p[__parindex[22]])
+#define c_v		(__p[__parindex[15]])
+#define s_v		(__p[__parindex[16]])
+#define phi_v		(__p[__parindex[17]])
+#define zeta		(__p[__parindex[18]])
+#define disp		(__p[__parindex[19]])
+#define d		(__p[__parindex[20]])
 #define T_model_type		(__pt[__parindex[0]])
 #define T_R0		(__pt[__parindex[1]])
 #define T_gamma_val		(__pt[__parindex[2]])
@@ -1014,14 +973,12 @@ void __pomp_to_trans (double *__pt, const double *__p, const int *__parindex)
 #define T_c		(__pt[__parindex[12]])
 #define T_s		(__pt[__parindex[13]])
 #define T_phi		(__pt[__parindex[14]])
-#define T_c_v1		(__pt[__parindex[15]])
-#define T_c_v2		(__pt[__parindex[16]])
-#define T_c_v3		(__pt[__parindex[17]])
-#define T_s_v		(__pt[__parindex[18]])
-#define T_phi_v		(__pt[__parindex[19]])
-#define T_zeta		(__pt[__parindex[20]])
-#define T_disp		(__pt[__parindex[21]])
-#define T_d		(__pt[__parindex[22]])
+#define T_c_v		(__pt[__parindex[15]])
+#define T_s_v		(__pt[__parindex[16]])
+#define T_phi_v		(__pt[__parindex[17]])
+#define T_zeta		(__pt[__parindex[18]])
+#define T_disp		(__pt[__parindex[19]])
+#define T_d		(__pt[__parindex[20]])
 
 void __pomp_from_trans (double *__p, const double *__pt, const int *__parindex)
 {
@@ -1034,9 +991,6 @@ void __pomp_from_trans (double *__p, const double *__pt, const int *__parindex)
 	gamma_val = exp(T_gamma_val);
 	omega_val = exp(T_omega_val);
 	omega_m_val = exp(T_omega_m_val);
-	c_v1 = exp(T_c_v1);
-	c_v2 = exp(T_c_v2);
-	c_v3 = exp(T_c_v3);
 	s_v = exp(T_s_v);
 	phi_v = exp(T_phi_v);
 	rho_val = exp(T_rho_val);
@@ -1060,9 +1014,7 @@ void __pomp_from_trans (double *__p, const double *__pt, const int *__parindex)
 #undef c
 #undef s
 #undef phi
-#undef c_v1
-#undef c_v2
-#undef c_v3
+#undef c_v
 #undef s_v
 #undef phi_v
 #undef zeta
@@ -1083,9 +1035,7 @@ void __pomp_from_trans (double *__p, const double *__pt, const int *__parindex)
 #undef T_c
 #undef T_s
 #undef T_phi
-#undef T_c_v1
-#undef T_c_v2
-#undef T_c_v3
+#undef T_c_v
 #undef T_s_v
 #undef T_phi_v
 #undef T_zeta
@@ -1108,14 +1058,12 @@ void __pomp_from_trans (double *__p, const double *__pt, const int *__parindex)
 #define c		(__p[__parindex[12]])
 #define s		(__p[__parindex[13]])
 #define phi		(__p[__parindex[14]])
-#define c_v1		(__p[__parindex[15]])
-#define c_v2		(__p[__parindex[16]])
-#define c_v3		(__p[__parindex[17]])
-#define s_v		(__p[__parindex[18]])
-#define phi_v		(__p[__parindex[19]])
-#define zeta		(__p[__parindex[20]])
-#define disp		(__p[__parindex[21]])
-#define d		(__p[__parindex[22]])
+#define c_v		(__p[__parindex[15]])
+#define s_v		(__p[__parindex[16]])
+#define phi_v		(__p[__parindex[17]])
+#define zeta		(__p[__parindex[18]])
+#define disp		(__p[__parindex[19]])
+#define d		(__p[__parindex[20]])
 #define samplesize		(__covars[__covindex[0]])
 #define Ma		(__x[__stateindex[0]])
 #define Sn		(__x[__stateindex[1]])
@@ -1161,18 +1109,6 @@ void __pomp_skelfn (double *__f, const double *__x, const double *__p, const int
                       /* seasonal forcing of birth */
 
                       double b = c * exp(-s * (pow(cos(M_PI * t / 365 - phi), 2)));
-                      
-                      double c_v;
-                      
-                       if( t < 1 ) {
-                          c_v = 1;
-                       } else if( t >= 1 && t <= 365 ) {
-                          c_v = c_v1;
-                       } else if( t >= 366 && t <= 730 ) {
-                          c_v = c_v2;
-                       } else {
-                          c_v = c_v3;
-                       }                     
                       
                       double sdrive = c_v * exp(-s_v * (pow(cos(M_PI * t / 365 - phi_v), 2)));
                       
@@ -1363,9 +1299,7 @@ void __pomp_skelfn (double *__f, const double *__x, const double *__p, const int
 #undef c
 #undef s
 #undef phi
-#undef c_v1
-#undef c_v2
-#undef c_v3
+#undef c_v
 #undef s_v
 #undef phi_v
 #undef zeta

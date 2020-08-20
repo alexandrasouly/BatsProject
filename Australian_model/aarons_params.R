@@ -443,7 +443,7 @@ model_5_params <- c(
 
       # seasonality params
       c = 16.301, # birth pulse scaling factor
-      s = 129.979, # birth pulse synchronicity
+      s = 130, # birth pulse synchronicity
       phi = 7.179, # birth pulse time shift
 
       c_v = 1, # seasonal drive scaling factor
@@ -477,7 +477,7 @@ model_5_params <- c(
    
    # seasonality params
    c = 16.301, # birth pulse scaling factor
-   s = 129.979, # birth pulse synchronicity
+   s = 130, # birth pulse synchronicity
    phi = 7.179, # birth pulse time shift
    
    c_v1 = 1, # seasonal drive scaling factor
@@ -540,7 +540,7 @@ model_5_params <- c(
 
       # seasonality params
       c = 12.586, # birth pulse scaling factor
-      s = 109.237, # birth pulse synchronicity
+      s = 130, # birth pulse synchronicity
       phi = 7.179, # birth pulse time shift
 
       c_v = 1, # seasonal drive scaling factor
@@ -573,7 +573,7 @@ model_5_params <- c(
 
       # seasonality params
       c = 19.817, # birth pulse scaling factor
-      s = 148.619, # birth pulse synchronicity
+      s = 130, # birth pulse synchronicity
       phi = 7.179, # birth pulse time shift
 
       c_v = 1, # seasonal drive scaling factor

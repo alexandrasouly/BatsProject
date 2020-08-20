@@ -7,17 +7,17 @@ library(dplyr)
 library(ggplot2)
 library(ggpubr)
 library(doParallel)
-registerDoParallel(cores= 6)
+registerDoParallel(cores= 4)
 library(doRNG)
 registerDoRNG(625904618)
 library(pomp)
 # ----------------------------------------- params of the filtering --------------------------------
 sobolDesign(
-  lower= model_4_params_lower,
-  upper= model_4_params_upper,
-  nseq=24) -> guesses
+  lower= model_8_params_lower,
+  upper= model_8_params_upper,
+  nseq=25) -> guesses
 
-guesses <-  rbind(guesses, model_4_params, model_4_params, model_4_params, model_4_params, model_4_params)
+guesses <-  rbind(guesses, model_8_params, model_8_params, model_8_params, model_8_params, model_8_params)
 
 Nmif = 20
 Np = 2500
@@ -35,12 +35,12 @@ Np = 2500
           Np = Np,
           cooling.fraction.50=0.5,
           cooling.type="geometric",
-          rw.sd=rw.sd(R0=0.02, zeta=0.02, rho_val = 0.02, epsilon_val = 0.2,
-                      c=0.02, s=0.02, s_v=0.02, phi_v=0.02, disp=0.02, d=0.01)
+          rw.sd=rw.sd(R0=0.02, zeta=0.02, gamma_val = 0.02, omega_val = 0.2,
+                      c=0.02, s_v=0.02, phi_v=0.02, disp=0.02, d=0.01)
         )
       }
 
-      save(guesses, mf3,  file = "model4_filtering_pt1.rda")
+      save(guesses, mf3,  file = "model4_filtering_pt1_s_fixed.rda")
 # ------------------------------------------- filtering part2 ---------------------------------------------
       mf3iter2<- foreach(mf3item=iter(mf3),
                         .combine=c,
@@ -51,7 +51,7 @@ Np = 2500
                     continue(mf3item, Nmif = 30)
                     }
 
-      save(guesses, mf3iter2,  file = "model4_filtering_pt2.rda")
+      save(guesses, mf3iter2,  file = "model4_filtering_pt2_s_fixed.rda")
 
 # -------------- calculating the likelihoods properly ------------------------------------------------
       
@@ -61,7 +61,7 @@ Np = 2500
       
                   ) %dopar%
                   {
-                    evals <- replicate(5,logLik(pfilter(mf3item,Np=4000)))
+                    evals <- replicate(5,logLik(pfilter(mf3item,Np=200)))
                     ll <- logmeanexp(evals,se=TRUE)
                     c(coef(mf3item),loglik=ll[1],loglik=ll[2])
                   }
@@ -70,13 +70,6 @@ Np = 2500
       # #staring a new csv file 
       lik_list %>%
       arrange(-loglik) %>%
-      write.csv("model4_likelihoods.csv")
-      # 
-      # 
-      # # #adding in more points to my csv of likelihoods
-      # read.table("model4_likelihoods.csv",sep = ",", row.names = 1, header = TRUE) %>%
-      # bind_rows(lik_list) %>%
-      # arrange(-loglik) %>% write.csv("model4_likelihoods.csv")
-
+      write.csv("model4_likelihoods_s_fixed.csv")
 
 

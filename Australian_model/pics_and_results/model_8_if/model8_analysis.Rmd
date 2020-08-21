@@ -110,7 +110,8 @@ pairs(~R0+gamma_val+omega_val+zeta+
 
   On this plot, we look independently at the likelihoods of the resulting parameter values:
 ```{r}
-gather(model8_likelihoods, key, value, -loglik) %>%
+gather(model8_likelihoods, key, value, -loglik) %>%lapply(lower, as.numeric) -> lower2
+
   filter(key %in% c( "R0", "gamma_val", "omega_val",  "zeta", "c",
                               "s", "phi","s_v", "phi_v", "disp", "d")) %>%
 ggplot(aes(value, loglik), main = "Results of model 8 IF") + 
@@ -178,3 +179,123 @@ ggplot(aes(value, loglik), main = "Results of model 8 IF phi fixed") +
 plot(pl4)
 ```
         Gamma seems to cluster at a different value than without phi fixed, instead of around 16 with loglik -70, -80, it went to 12, with a much higher likelihood -55, -65. This gives us a better estimate for the true value of gamma. Same for R0. We can actually see the clusters for gamma_val and phi_v over a relatively small range. 
+        
+### Fixing phi and s ###
+
+We have now fixed both phi and s, and ran iterated filtering with an initial set of guesses as before, on 30 points, with 50 iterations and 2500 particles. 
+
+  Let us plot the traces of the filtering. The second plot is zooming in on the end of the graphs.
+
+```{r}
+ read.csv("model8_likelihoods.csv", row.names=1)  %>% 
+  filter(comment== "s fixed IF") -> model8_likelihoods_s_fixed
+load("model8_filtering_pt2_s_fixed.rda")
+
+mf3iter2 %>%
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "omega_val", "gamma_val",  "zeta", "c",
+                          "s_v", "phi_v", "disp", "d") )%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+
+mf3iter2%>% 
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "omega_val", "gamma_val",  "zeta", "c",
+                          "s_v", "phi_v", "disp", "d") )%>%
+  filter(iteration>20)%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  labs(main="Zooming on the last 20 iterations")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+``` 
+
+ 
+ 
+ This is actually great! We have much better convergence for many more parameters: 
+ R0 has a smaller range than before, gamma_val is converging as before; apart from that one particle, omega is also converging better. c is the same as before, so is phi_v and disp. d and zeta is still not converging. 
+ 
+I want to see what omega did, by taking out that one outlier so we get a better zoom on that plot. Before, omega didn't budge from the starting values and it was just parallel lines, so it would be nice to see if it's still the case. It would be also nice to see if that one stray line on most of the plots corresponds to the same trajectory that maybe got stuck in a local minimum, and I hope it corresponds to the lowest value of loglik that didn't seem to converge.
+  Now let us take out the three worst lines, and only keep the loglik values around -55.
+
+```{r}
+mf3iter2[-c(17, 21, 16)]%>% 
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "omega_val", "gamma_val",  "zeta", "c",
+                          "s_v", "phi_v", "disp", "d") )%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  labs(main="Zooming on the last 20 iterations")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+mf3iter2[-c(17, 21, 16)]%>% 
+  traces() %>%
+  melt() %>%
+  filter(variable %in% c("loglik", "R0", "omega_val", "gamma_val",  "zeta", "c",
+                          "s_v", "phi_v", "disp", "d") )%>%
+  filter(iteration>20)%>%
+  ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
+  geom_line()+
+  facet_wrap(~variable,scales="free_y")+
+  labs(main="Zooming on the last 20 iterations")+
+  guides(color=FALSE) -> pl1
+
+plot(pl1)
+  
+```
+  Now, by ignoring the three worst likelihoods and only keeping those around with filtering loglik -55, we can see that the outliers for gamma, omega, c and phi_v disappeared, so this probably means that the fitting just got stuck in a local extrema. We have a reasonable range for omega, gamma and phi_v.
+  We still did not get d and zeta to budge during the fitting however. I might try to add more perturbation to them. and fix omega, gamma and phi_v.
+  The actual loglikelihoods are a bit higher as the filtering model estimates a perturbed version of it (but the 3 worse ones are the same ones), and the best results are the following:
+```{r}
+head(model8_likelihoods_s_fixed, 5) %>%
+  select (c("loglik", "loglik.se", "R0", "gamma_val", "omega_val",  "zeta", "c",
+                         "s", "phi","s_v", "phi_v", "disp", "d"))
+```
+```{r}
+model8_likelihoods_s_fixed %>%
+  select(-comment) %>%
+  filter(loglik > -59 ) %>%
+gather(key, value, -loglik) %>%
+  filter(key %in% c( "R0", "gamma_val", "omega_val",  "zeta", "c",
+                     "s_v", "phi_v", "disp", "d")) %>%
+ggplot(aes(value, loglik), main = "Results of model 8 IF with phi and s fixed") + 
+   geom_point() +
+  facet_wrap(~ key , scales="free_x", )-> pl4
+
+plot(pl4)
+``` 
+    Now we take the best two results and simulate with them, to see what we got:
+```{r}
+source("./../../pomp_model_fn.R")
+source("./../../aarons_params.R")
+
+head(model8_likelihoods_s_fixed, 2) %>%
+  select( -c("loglik","loglik.se", "comment")) -> best_params
+apply(best_params, 1, function(x)
+  pomp_model_fn(site="CLU", year="all", 
+                init_states= model_8_before_equ_ini,
+                input_params = x)) -> best_params_plots
+
+for (i in 1:2){
+    plot(best_params_plots[[i]][["plprev"]])
+    plot(best_params_plots[[i]][["plH"]])
+    
+  }
+```
+
+```{r}
+model8_likelihoods_s_fixed %>% select(-comment) %>% filter(loglik > -59) -> nocomm
+  pairs(~R0+gamma_val+omega_val+zeta+
+        c+s_v+phi_v+disp+d, data= nocomm, pch= 16)
+```

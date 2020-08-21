@@ -44,16 +44,8 @@ head(5) %>%
 
 
   On this plot, we look independently at the likelihoods of the resulting parameter values:
-```{r}
-gather(model4_likelihoods, key, value, -loglik) %>%
-  filter(key %in% c( "R0", "rho_val", "epsilon_val",  "zeta", "c",
-                              "s", "phi","s_v", "phi_v", "disp", "d")) %>%
-ggplot(aes(value, loglik), main = "Results of model 4 IF") + 
-   geom_point() +
-  facet_wrap(~ key , scales="free_x", ncol=4) -> pl4
 
-plot(pl4)
-``` 
+  #![Initial guesses](images/result_likhoods.png)  
   
     Now we take the best four results and simulate with them, to see what we got:
 ```{r}

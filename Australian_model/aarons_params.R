@@ -527,7 +527,7 @@ model_5_params <- c(
       model_type = 2, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
 
       R0 = 22.46,
-      gamma_val = 0.968, # recovery rate I -> R
+      gamma_val = 11.57992, # recovery rate I -> R
       omega_val = 1.345, # immune waning rate R -> S
       omega_m_val = 0.801, # maternal antibody waning rate
       kappa_val = 5000, # carrying capacity
@@ -545,7 +545,7 @@ model_5_params <- c(
 
       c_v = 1, # seasonal drive scaling factor
       s_v = 37.69, # seasonal drive synchronicity
-      phi_v = 1.473 , # sesonal drive time shift
+      phi_v = 3.048746, # sesonal drive time shift
 
       # measuring process params
       zeta = 0.046, # test accuracy
@@ -560,7 +560,7 @@ model_5_params <- c(
       model_type = 2, #  1: SIR, 2:SIRS or 3:SILI, matters for seasonal forcing only
 
       R0 = 49.849,
-      gamma_val = 6.653, # recovery rate I -> R
+      gamma_val = 11.57992, # recovery rate I -> R
       omega_val = 18.309, # immune waning rate R -> S
       omega_m_val = 0.801, # maternal antibody waning rate
       kappa_val = 5000, # carrying capacity
@@ -578,7 +578,7 @@ model_5_params <- c(
 
       c_v = 1, # seasonal drive scaling factor
       s_v = 199.776, # seasonal drive synchronicity
-      phi_v = 2.111 , # sesonal drive time shift
+      phi_v = 3.048746 , # sesonal drive time shift
 
       # measuring process params
       zeta = 0.903, # test accuracy

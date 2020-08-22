@@ -7,7 +7,7 @@ library(dplyr)
 library(ggplot2)
 library(ggpubr)
 library(doParallel)
-registerDoParallel(cores= 4)
+registerDoParallel(cores= 6)
 library(doRNG)
 registerDoRNG(625904618)
 library(pomp)
@@ -48,7 +48,7 @@ Np = 2500
         )
       }
 
-      save(guesses, mf3,  file = "model8_filtering_pt1_d_fixed.rda")
+      save(final_guesses, mf3,  file = "model8_filtering_pt1_d_fixed.rda")
 # ------------------------------------------- filtering part2 ---------------------------------------------
       mf3iter2<- foreach(mf3item=iter(mf3),
                         .combine=c,
@@ -59,7 +59,7 @@ Np = 2500
                     continue(mf3item, Nmif = 30)
                     }
 
-      save(guesses, mf3iter2,  file = "model8_filtering_pt2_d_fixed.rda")
+      save(final_guesses, mf3iter2,  file = "model8_filtering_pt2_d_fixed.rda")
 
 # -------------- calculating the likelihoods properly ------------------------------------------------
       

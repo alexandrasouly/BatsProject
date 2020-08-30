@@ -8,14 +8,12 @@ det_model_skeleton <- function(){
                       
                       double c_v;
                       
-                       if( t < 1 ) {
-                          c_v = 1;
-                       } else if( t >= 1 && t <= 365 ) {
+                       if( t <= 365 ) {
                           c_v = c_v1;
                        } else if( t >= 366 && t <= 730 ) {
-                          c_v = c_v2;
+                          c_v = c_v1 * k1;
                        } else {
-                          c_v = c_v3;
+                          c_v = c_v1 * k2;
                        }                     
                       
                       double sdrive = c_v * exp(-s_v * (pow(cos(M_PI * t / 365 - phi_v), 2)));

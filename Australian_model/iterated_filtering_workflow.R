@@ -1,5 +1,7 @@
-source("full_pomp_model.R", local = TRUE)
-source("aarons_params.R", local = TRUE)
+ source("full_pomp_model_inter_season.R", local = TRUE)
+ source("aarons_params.R", local = TRUE)
+ source("inter_season_params.R", local = TRUE)
+ 
 library(foreach)
 library(iterators)
 library(plyr)
@@ -12,22 +14,15 @@ library(doRNG)
 registerDoRNG(625904618)
 library(pomp)
 # ----------------------------------------- params of the filtering --------------------------------
-model_8_params_lower <- model_8_params_lower[-21]
-model_8_params_upper <- model_8_params_upper[-21]
+model_8_params_lower <- model_8_params_inter_seasons_lower1 
+model_8_params_upper <- model_8_params_inter_seasons_upper1
 sobolDesign(
   lower= model_8_params_lower,
   upper= model_8_params_upper,
-  nseq=20) -> other_guesses
-
-d_guesses <-c(1,5)
-merge(other_guesses, d_guesses) -> final_guesses
-final_guesses$y -> final_guesses$d
-final_guesses$y <-NULL
+  nseq=30) -> guesses
 
 
-
-
-Nmif = 20
+Nmif = 30
 Np = 2500
 # ------------------------------------------- filtering ---------------------------------------------
       mf3<- foreach(guess=iter(final_guesses,"row"),
@@ -35,7 +30,7 @@ Np = 2500
                 .packages = "pomp"
 
       ) %dopar%
-  
+
       {   mif2(
           pomp_object,
           params = guess,
@@ -43,23 +38,25 @@ Np = 2500
           Np = Np,
           cooling.fraction.50=0.5,
           cooling.type="geometric",
-          rw.sd=rw.sd(R0=0.02, zeta=0.02, omega_val = 0.2,
-                      c=0.02, s_v=0.02, disp=0.02)
+          rw.sd=rw.sd(R0=0.02, zeta=0.02, omega_val = 0.02,
+                      c=0.02, s_v=0.02, disp=0.02,
+                      k1 = 0.02, k2 = 0.02, d = 0.01, 
+                      gamma_val = 0.02, phi_v = 0.02)
         )
       }
 
-      save(final_guesses, mf3,  file = "model8_filtering_pt1_d_fixed.rda")
+      save(final_guesses, mf3,  file = "model8_filtering_pt1_inter_season_v1.rda")
 # ------------------------------------------- filtering part2 ---------------------------------------------
       mf3iter2<- foreach(mf3item=iter(mf3),
                         .combine=c,
                         .packages = "pomp"
-      
+
                   ) %dopar%
                   {
                     continue(mf3item, Nmif = 30)
                     }
 
-      save(final_guesses, mf3iter2,  file = "model8_filtering_pt2_d_fixed.rda")
+      save(final_guesses, mf3iter2,  file = "model8_filtering_pt2_inter_season_v1.rda")
 
 # -------------- calculating the likelihoods properly ------------------------------------------------
       
@@ -78,6 +75,6 @@ Np = 2500
       # #staring a new csv file 
       lik_list %>%
       arrange(-loglik) %>%
-      write.csv("model8_likelihoods_d_fixed.csv")
+      write.csv("model8_inter_season_v1")
 
 

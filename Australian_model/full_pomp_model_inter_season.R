@@ -40,7 +40,7 @@ param_names <- params()
 
 source("aarons_params.R", local = TRUE)
 init_states <- model_8_before_equ_ini
-params <- model_8_params_inter_season
+#params <- model_8_params_inter_season
 
 
 
@@ -53,7 +53,8 @@ pomp_object <- pomp(data=pos_dat,
                     statenames=state_names,
                     paramnames=param_names,
                     partrans=parameter_trans(log=c("R0","c","s", "phi", "disp", "d", "gamma_val","omega_val", "omega_m_val", 
-                                                   "c_v1", "c_v2", "c_v3", "s_v", "phi_v", "rho_val", "epsilon_val"),
+                                                   "c_v1", "s_v", "phi_v", "rho_val", "epsilon_val",
+                                                   "k1", "k2"),
                                              logit = c("zeta")),
                     rmeasure=rmeas,
                     dmeasure=dmeas,
@@ -76,30 +77,30 @@ pomp_object <- pomp(data=pos_dat,
 # plot()
 
 # simulating and calculating deterministic trajectory
-sim <- simulate(pomp_object,params=params,format = "data.frame", nsim = 100, time = seq(0, 356*3))
-x <- trajectory(pomp_object,params=params,format="d", time = seq(0, 356*3))
-
-
-colnames(pos_dat) <-c("time", "true_pos")
-sim_plus_data <- merge(sim, pos_dat, by.sim = "time")
-sim_plus_data <- merge(sim_plus_data, samplesize_dat, by.sim_plus_data = "time")
-sim_plus_data %>% mutate(true_test_prev = true_pos/samplesize, sim_test_prev = pos/samplesize,
-                         sim_model_prev = (In + Ij + Im + If)/
-                           (Sn + Sj + Sm + Sf + En + Ej + 
-                              Em + Ef + In + Ij + Im + If +
-                              Rn + Rj + Rm + Rf + Ma)
-) -> sim_plus_data
-
-
-
-source("plots.R")
-plots <- plots(sim_plus_data, x, sim)
-names(plots) <- c(   "plIm", "plRm", "plEm", "plSm", 
-                     "plIj", "plRj", "plEj", "plSj", 
-                     "plIn", "plRn", "plEn", "plSn",
-                     "plMa", "plH", "plprev")
-
-
-
+# sim <- simulate(pomp_object,params=params,format = "data.frame", nsim = 100, time = seq(0, 356*3))
+# x <- trajectory(pomp_object,params=params,format="d", time = seq(0, 356*3))
+# 
+# 
+# colnames(pos_dat) <-c("time", "true_pos")
+# sim_plus_data <- merge(sim, pos_dat, by.sim = "time")
+# sim_plus_data <- merge(sim_plus_data, samplesize_dat, by.sim_plus_data = "time")
+# sim_plus_data %>% mutate(true_test_prev = true_pos/samplesize, sim_test_prev = pos/samplesize,
+#                          sim_model_prev = (In + Ij + Im + If)/
+#                            (Sn + Sj + Sm + Sf + En + Ej + 
+#                               Em + Ef + In + Ij + Im + If +
+#                               Rn + Rj + Rm + Rf + Ma)
+# ) -> sim_plus_data
+# 
+# 
+# 
+# source("plots.R")
+# plots <- plots(sim_plus_data, x, sim)
+# names(plots) <- c(   "plIm", "plRm", "plEm", "plSm", 
+#                      "plIj", "plRj", "plEj", "plSj", 
+#                      "plIn", "plRn", "plEn", "plSn",
+#                      "plMa", "plH", "plprev")
+# 
+# 
+# 
 
 

@@ -4,8 +4,8 @@ cat("Model 4 Iterated filtering on all Clunes data using 50 iter, 2000 particles
 mf3iter2%>%
   traces() %>%
   melt() %>%
-  filter(variable %in% c("loglik", "R0", "gamma_val",  "zeta", "c",
-                         "s", "phi","s_v", "phi_v", "disp", "d") )%>%
+  filter(variable %in% c("loglik", "R0", "gamma_val", "zeta", "c",
+                         "s_v", "phi_v", "disp", "d") )%>%
   ggplot(aes(x=iteration,y=value,group=L1,color=L1))+
   geom_line()+
   facet_wrap(~variable,scales="free_y")+
@@ -23,15 +23,16 @@ pairs(~R0+rho_val+epsilon_val+zeta+
         c+s+phi+s_v+phi_v+disp+d,data=all,col=ifelse(all$.id=="guess",grey(0.5),"red"),pch=20,main ="Model 4 high likelihood areas" )
 
 # end values loglik
-pairs(~loglik+R0+rho_val+epsilon_val+zeta+
-        c+s+phi+s_v+phi_v+disp+d,data=subset(lik_list,loglik>max(loglik)-20),pch=20, main = "Model 4 loglikelihoods")
+pairs(~R0+rho_val+epsilon_val+zeta+
+        c+s_v+phi_v+disp+d,data=model4_likelihoods_s_fixed,pch=20, main = "Model 4 loglikelihoods")
   
 
 #######################################################
 
-gather(lik_list, key, value, -loglik) %>%
-  filter(key %in% c( "R0", "rho_val", "epsilon_val",  "zeta", "c",
-                              "s", "phi","s_v", "phi_v", "disp", "d")) %>%
+gather(model6_likelihoods_s_fixed, key, value, -loglik) %>%
+  filter(loglik> -59) %>%
+  filter(key %in% c( "R0", "gamma_val",  "zeta", "c",
+                              "s_v", "phi_v", "disp", "d")) %>%
 ggplot(aes(value, loglik), main = "Results of model 4 IF") + 
    geom_point() +
   facet_wrap(~ key , scales="free_x", ncol=4) -> pl4
